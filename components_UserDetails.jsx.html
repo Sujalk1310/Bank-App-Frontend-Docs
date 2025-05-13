@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/UserDetails.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/UserDetails.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
+import { getAPI } from '../caller/axiosUrls';
+
+/**
+ * Displays user details (name, ID, or username) based on whether the user is an admin.
+ * Fetches details from the appropriate API endpoint on component mount.
+ * 
+ * @param {object} props - The component props.
+ * @param {boolean} props.isAdmin - Flag indicating if the current user is an admin.
+ * @returns {JSX.Element} The user details display or a skeleton loader while fetching.
+ */
+const UserDetails = ({ isAdmin }) => {
+    const [employeeName, setEmployeeName] = useState('');
+    const [employeeId, setEmployeeId] = useState('');
+    const [username, setUsername] = useState('');
+    const [sender, setSender] = useState(true);
+
+    /**
+     * Fetches user details from the API based on the isAdmin prop.
+     * Updates component state with fetched data (username or employee name/ID).
+     */
+    const getUserDetails = async () => {
+        setSender(true);
+        
+        try {
+            if (isAdmin) {
+                const response = await getAPI('/admin/getAdminDetails');
+                setUsername(response.username);
+            } else {
+                const response = await getAPI('/employee/getEmployeeDetails');
+                setEmployeeId(response.employeeId);
+                setEmployeeName(response.employeeName);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    useEffect(() => {
+        getUserDetails();
+    }, []);
+
+    return (
+        &lt;div className="absolute z-10 bg-white pb-3 pt-4 px-5 shadow-lg rounded-b-xl flex flex-col font-medium gap-x-2 right-12">
+            {sender ? &lt;Skeleton height={isAdmin ? 24 : 40 } width={180} /> :
+            &lt;>
+                &lt;p>{isAdmin ? `Welcome, ${username}!` : employeeName}&lt;/p>
+                {!isAdmin &amp;&amp; &lt;p>Employee ID: {employeeId}&lt;/p>}
+            &lt;/>}
+        &lt;/div>
+    )
+}
+
+export default UserDetails;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

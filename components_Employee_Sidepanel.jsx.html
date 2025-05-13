@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Employee/Sidepanel.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Employee/Sidepanel.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { GrUserSettings } from "react-icons/gr";
+import { MdLogout } from "react-icons/md";
+import { MdSpaceDashboard } from "react-icons/md";
+import { MdSwitchAccount } from "react-icons/md";
+import { MdAddBox } from "react-icons/md";
+import { IoSearchSharp } from "react-icons/io5";
+import { LuUsersRound } from "react-icons/lu";
+import { GiTakeMyMoney } from "react-icons/gi";
+import { GrTransaction } from "react-icons/gr";
+import { PiHandDepositFill } from "react-icons/pi";
+import { PiHandWithdrawFill } from "react-icons/pi";
+import { FaHistory } from "react-icons/fa";
+import { MdOutlineDomainVerification } from "react-icons/md";
+import { IoPersonAdd } from "react-icons/io5";
+import { GrView } from "react-icons/gr";
+import SidepanelButton from '../SidepanelButton';    
+import { useNavigate } from "react-router-dom";
+import { useContext, useState } from "react";
+import { postAPI } from "../../caller/axiosUrls";
+import toast from "react-hot-toast";
+import FullPageLoader from '../FullPageLoader';
+import { EmployeeContext } from '../../contexts/EmployeeToken';
+
+/**
+ * The side panel navigation component for the Employee section.
+ * Displays navigation links (including nested submenus) for Dashboard, Members,
+ * Accounts, Loans, Transactions, and Settings.
+ * Also includes company branding and a logout button.
+ * 
+ * Uses `SidepanelButton` for individual navigation items.
+ * Handles navigation using `react-router-dom`'s `useNavigate` hook.
+ * Manages logout functionality, clearing tokens and redirecting.
+ * 
+ * @returns {JSX.Element} The employee side panel component.
+ */
+const Sidepanel = () => {
+    const [sender, setSender] = useState(false);
+
+    const { setToken } = useContext(EmployeeContext);
+    
+    const navigate = useNavigate();
+
+    /**
+     * Handles the employee logout process.
+     * Calls the logout API endpoint, clears session storage and context state,
+     * displays success/error toasts, and navigates to the employee login page.
+     */
+    const logout = async () => {
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI('/employee/logout');
+            toast.success(response.message);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            sessionStorage.removeItem("token");
+            sessionStorage.removeItem("employee-id");
+            setToken(null);
+            setSender(false);
+            navigate('/login/employee');
+        }
+    }
+
+    return (
+        &lt;>
+            {sender &amp;&amp; &lt;FullPageLoader />}
+            &lt;div className="bg-[#F8F9FA] py-10 flex flex-col min-w-[280px]">
+                &lt;p className="ml-10 text-[24px] text-[#1E1F26]">{import.meta.env.VITE_COMPANY_NAME}&lt;/p>
+                &lt;p className="ml-10 text-[#1E1F26]">{import.meta.env.VITE_COMPANY_TAG}&lt;/p>
+                &lt;div className="flex-1 mt-10 mb-5 overflow-y-auto no-scrollbar">
+                    &lt;SidepanelButton sender={sender} text={"Dashboard"} icon={&lt;MdSpaceDashboard />} activePathname={'/employee/dashboard'} cb={() => navigate('/employee/dashboard')} />
+                    &lt;SidepanelButton sender={sender} text={"Members"} icon={&lt;LuUsersRound />} activePathname={'/employee/members'} submenuList={[
+                            { text: "Search", icon: &lt;IoSearchSharp />, activePathname: "/employee/members/search", cb: () => navigate('/employee/members/search') },
+                            { text: "Create", icon: &lt;IoPersonAdd />, activePathname: "/employee/members/create", cb: () => navigate('/employee/members/create') },
+                        ]}
+                    />
+                    &lt;SidepanelButton sender={sender} text={"Accounts"} icon={&lt;MdSwitchAccount />} activePathname={'/employee/accounts'} submenuList={[
+                            { text: "Search", icon: &lt;IoSearchSharp />, activePathname: "/employee/accounts/search", cb: () => navigate('/employee/accounts/search') },
+                            { text: "Create", icon: &lt;MdAddBox />, activePathname: "/employee/accounts/create", cb: () => navigate('/employee/accounts/create') },
+                        ]}
+                    />
+                    &lt;SidepanelButton sender={sender} text={"Loans"} icon={&lt;GiTakeMyMoney />} activePathname={'/employee/loans'} submenuList={[
+                            { text: "View", icon: &lt;GrView />, activePathname: "/employee/loans/view", cb: () => navigate('/employee/loans/view') },
+                            { text: "Apply", icon: &lt;MdOutlineDomainVerification />, activePathname: "/employee/loans/apply", cb: () => navigate('/employee/loans/apply') },
+                        ]}
+                    />
+                    &lt;SidepanelButton sender={sender} text={"Transactions"} icon={&lt;GrTransaction />} activePathname={'/employee/transactions'} submenuList={[
+                            { text: "Deposit", icon: &lt;PiHandDepositFill />, activePathname: "/employee/transactions/deposit", cb: () => navigate('/employee/transactions/deposit') },
+                            { text: "Withdraw", icon: &lt;PiHandWithdrawFill />, activePathname: "/employee/transactions/withdraw", cb: () => navigate('/employee/transactions/withdraw') },
+                            { text: "History", icon: &lt;FaHistory />, activePathname: "/employee/transactions/history", cb: () => navigate('/employee/transactions/history') },
+                        ]}
+                    />
+                &lt;/div>
+                &lt;div className="flex flex-col w-full">
+                    &lt;SidepanelButton sender={sender} text={"Settings"} icon={&lt;GrUserSettings />} activePathname={'/employee/settings'} cb={() => navigate('/employee/settings')} />
+                    &lt;SidepanelButton sender={sender} text={"Log out"} icon={&lt;MdLogout />} cb={logout} />
+                &lt;/div>
+            &lt;/div>
+        &lt;/>
+    )
+}
+
+export default Sidepanel;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

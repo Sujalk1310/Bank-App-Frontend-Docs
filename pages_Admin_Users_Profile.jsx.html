@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Admin/Users/Profile.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Admin/Users/Profile.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState, useRef } from "react";
+import toast from "react-hot-toast";
+import { useNavigate, useParams } from "react-router-dom";
+import Loader from "../../../components/Loader";
+import NotFound from '../../../components/NotFound';
+import { getAPI, postAPI } from "../../../caller/axiosUrls";
+import { FaEdit } from "react-icons/fa";
+import { MdOutlineDone } from "react-icons/md";
+import { IoCloseOutline } from "react-icons/io5";
+import { isValidPhoneNumber, isValidEmail } from "../../../utils/validator";
+import CustomButton from "../../../components/CustomButton";
+
+/**
+ * Employee Profile page (Admin view).
+ * Displays an employee's details (name, ID) fetched based on the `:uid` route parameter.
+ * Allows the admin to view and update the employee's email and phone number.
+ * Includes input validation and API calls for updates.
+ * Provides a button to delete the employee, with a confirmation step.
+ * 
+ * @returns {JSX.Element} The employee profile page or a loader/not found component.
+ */
+const Profile = () => {
+    const [sender, setSender] = useState(true);
+    const [data, setData] = useState(null);
+    const [originalEmail, setOriginalEmail] = useState(null);
+    const [originalPhoneNumber, setOriginalPhoneNumber] = useState(null);
+    const [correctEmail, setCorrectEmail] = useState(true);
+    const [correctPhoneNumber, setCorrectPhoneNumber] = useState(true);
+    const [editingEmail, setEditingEmail] = useState(false);
+    const [editingPhoneNumber, setEditingPhoneNumber] = useState(false);
+    const [finalWarning, setFinalWarning] = useState(false);
+
+    const emailInputRef = useRef(null); // Ref for email input field
+    const phoneInputRef = useRef(null); // Ref for phone input field
+
+    const { uid } = useParams();
+    const navigate = useNavigate();
+
+    /**
+     * Fetches employee details from the API using the `uid` from route parameters.
+     * Updates component state with fetched data or shows error toast.
+     */
+    const getEmployeeDetails = async () => {
+        if (!uid) {
+            toast("Employee ID is required!", { icon: "⚠️" });
+            navigate('/admin/users/all');
+            return;
+        }
+
+        setSender(true);
+
+        try {
+            const response = await getAPI(`/employee/get-employee/${uid}`);
+            setData(response.employee);
+            setOriginalEmail(response.employee.mail);
+            setOriginalPhoneNumber(response.employee.mobileNumber);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    };
+
+    /**
+     * Handles changes to the email input field.
+     * Updates the email value in the `data` state and validates it.
+     * @param {string} value - The new email input value.
+     */
+    const handleEmailChange = (value) => {
+        setData(prev => ({ ...prev, mail: value }));
+        setCorrectEmail(isValidEmail(value));
+    };
+
+    /**
+     * Cancels the email editing state and reverts the email field to its original value.
+     */
+    const handleEmailChangeCancel = () => {
+        setData(prev => ({ ...prev, mail: originalEmail }));
+        setEditingEmail(false);
+    };
+
+    /**
+     * Enters the email editing state and focuses the input field.
+     */
+    const handleEditEmail = () => {
+        setEditingEmail(true);
+        setTimeout(() => emailInputRef.current?.focus(), 0); // Focus input after state update
+    };
+
+    /**
+     * Handles changes to the phone number input field.
+     * Updates the phone number value in the `data` state and validates it.
+     * @param {string} value - The new phone number input value.
+     */
+    const handlePhoneNumberChange = (value) => {
+        setData(prev => ({ ...prev, mobileNumber: value }));
+        setCorrectPhoneNumber(isValidPhoneNumber(value));
+    };
+
+    /**
+     * Cancels the phone number editing state and reverts the field to its original value.
+     */
+    const handlePhoneNumberChangeCancel = () => {
+        setData(prev => ({ ...prev, mobileNumber: originalPhoneNumber }));
+        setEditingPhoneNumber(false);
+    };
+
+    /**
+     * Enters the phone number editing state and focuses the input field.
+     */
+    const handleEditPhoneNumber = () => {
+        setEditingPhoneNumber(true);
+        setTimeout(() => phoneInputRef.current?.focus(), 0); // Focus input after state update
+    };
+
+    /**
+     * Calls the API to update the employee's email address.
+     * Updates local state and original value on success.
+     */
+    const handleEmailUpdate = async () => {
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI(`/admin/update-employee-email/${uid}`, {
+                mail: data.mail
+            });
+            setEditingEmail(false);
+            setData(prev => ({ ...prev, mail: response.mail }));
+            setOriginalEmail(response.mail);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Calls the API to update the employee's phone number.
+     * Updates local state and original value on success.
+     */
+    const handlePhoneNumberUpdate = async () => {
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI(`/admin/update-employee-phone/${uid}`, { 
+                mobileNumber: data.mobileNumber 
+            });
+            setEditingPhoneNumber(false);
+            setData(prev => ({ ...prev, mobileNumber: response.mobileNumber }));
+            setOriginalPhoneNumber(response.mail);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Handles the employee deletion process.
+     * Sets a final warning state on the first click.
+     * On the second click (within a timeout), calls the delete API.
+     * Navigates back to the user list on successful deletion.
+     */
+    const deleteUser = async () => {
+        if (!finalWarning) {
+            setFinalWarning(true);
+            return;
+        }
+
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI(`/admin/delete-employee/${uid}`);
+            toast.success(response.message);
+            setTimeout(() => {
+                navigate('/admin/users/all');
+            }, 2000)
+        } catch (error) {
+            toast.error(error.message);
+            setSender(false);
+        }
+    }
+
+    useEffect(() => {
+        if (finalWarning) {
+            const timer = setTimeout(() => {
+                setFinalWarning(false);
+            }, 10000)
+
+            return () => {
+                clearTimeout(timer);
+            }
+        }
+    }, [finalWarning])
+
+    useEffect(() => {
+        getEmployeeDetails();
+    }, [uid]);
+
+    return (
+        &lt;>
+            {sender ? &lt;Loader text={"Loading..."} /> :
+                !data ? &lt;NotFound text={"Employee Not Found!"} /> :
+                &lt;div className="flex flex-col w-[70%] px-12 py-10">
+                    &lt;div className="text-[24px] flex items-center justify-between font-semibold ml-2">
+                        &lt;p className="max-w-[80%] truncate">{data?.employeeName}&lt;/p>
+                        &lt;p>({data?.employeeId})&lt;/p>
+                    &lt;/div>
+                    &lt;hr className="border-[#55595F] border-1 mt-5" />
+                    
+                    {/* Email Section */}
+                    &lt;div className="flex flex-col mt-8 relative">
+                        &lt;label htmlFor="email" className="ml-1 font-semibold">Employee Email&lt;/label>
+                        &lt;div className="flex items-center mt-2 gap-x-3">
+                            &lt;div className="grow relative">
+                                &lt;input 
+                                    ref={emailInputRef} // Attach ref to email input
+                                    maxLength="320" 
+                                    disabled={sender || !editingEmail} 
+                                    id="email" 
+                                    className="form-input w-full" 
+                                    placeholder="example@xyz.com" 
+                                    value={data?.mail || ""} 
+                                    onChange={(e) => handleEmailChange(e.target.value)} 
+                                />
+                                {(originalEmail &amp;&amp; data?.mail !== originalEmail) &amp;&amp; (
+                                    &lt;span className="absolute bottom-3 right-4">
+                                        {correctEmail ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}
+                                    &lt;/span>
+                                )}
+                            &lt;/div>
+                            &lt;button 
+                                disabled={sender}
+                                onClick={() => editingEmail ? handleEmailChangeCancel() : handleEditEmail()} 
+                                className="cursor-pointer form-input h-full max-w-[200px] bg-gray-100"
+                            >
+                                {editingEmail ? &lt;IoCloseOutline className="text-[20px]" /> : &lt;FaEdit className="text-[20px]" />}
+                            &lt;/button>
+                        &lt;/div>
+                        &lt;div className={`${(originalEmail &amp;&amp; data?.mail !== originalEmail) ? 'h-[60px]' : 'h-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] flex mt-4 items-center overflow-hidden`}>
+                            &lt;CustomButton sender={sender} cb={() => handleEmailUpdate()} disabledCond={(!(data?.mail !== originalEmail))} text={"Update Email"} classes={"grow"} />
+                        &lt;/div>
+                    &lt;/div>
+
+                    {/* Phone Number Section */}
+                    &lt;div className="flex flex-col mt-5 relative">
+                        &lt;label htmlFor="phone" className="ml-1 font-semibold">Phone Number&lt;/label>
+                        &lt;div className="flex items-center mt-2 gap-x-3">
+                            &lt;div className="grow relative">
+                                &lt;input 
+                                    ref={phoneInputRef} // Attach ref to phone input
+                                    maxLength="15" 
+                                    disabled={sender || !editingPhoneNumber} 
+                                    id="phone" 
+                                    className="form-input w-full" 
+                                    placeholder="+91XXXXXXXXXX" 
+                                    value={data?.mobileNumber || ""} 
+                                    onChange={(e) => handlePhoneNumberChange(e.target.value)} 
+                                />
+                                {(originalPhoneNumber &amp;&amp; data?.mobileNumber !== originalPhoneNumber) &amp;&amp; (
+                                    &lt;span className="absolute bottom-3 right-4">
+                                        {correctPhoneNumber ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}
+                                    &lt;/span>
+                                )}
+                            &lt;/div>
+                            &lt;button 
+                                disabled={sender}
+                                onClick={() => editingPhoneNumber ? handlePhoneNumberChangeCancel() : handleEditPhoneNumber()} 
+                                className="cursor-pointer form-input h-full max-w-[200px] bg-gray-100"
+                            >
+                                {editingPhoneNumber ? &lt;IoCloseOutline className="text-[20px]" /> : &lt;FaEdit className="text-[20px]" />}
+                            &lt;/button>
+                        &lt;/div>
+                        &lt;div className={`${(originalPhoneNumber &amp;&amp; data?.mobileNumber !== originalPhoneNumber) ? 'h-[60px]' : 'h-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] flex mt-4 items-center overflow-hidden`}>
+                            &lt;CustomButton sender={sender} cb={() => handlePhoneNumberUpdate()} disabledCond={(!(data?.mobileNumber !== originalPhoneNumber))} text={"Update Phone Number"} classes={"grow"} />
+                        &lt;/div>
+                    &lt;/div>
+                    &lt;div className={`flex mt-4 items-center`}>
+                        &lt;CustomButton sender={sender} cb={() => deleteUser()} danger={finalWarning ? false : true} text={finalWarning ? "I confirm to delete this user!" : "Delete User"} classes={"grow"} />
+                    &lt;/div>
+                &lt;/div>
+            }
+        &lt;/>
+    );
+};
+
+export default Profile;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

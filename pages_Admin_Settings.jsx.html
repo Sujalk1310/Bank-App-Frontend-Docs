@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Admin/Settings.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Admin/Settings.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import { TbUserEdit } from "react-icons/tb";
+import { FaUnlockAlt } from "react-icons/fa";
+import TabButton from "../../components/TabButton";
+import PersonalInfo from "../../components/Admin/PersonalInfo";
+import PasswordAndSecurity from '../../components/PasswordAndSecurity';
+
+/**
+ * Admin Settings page component.
+ * Provides a tabbed interface for managing account settings.
+ * Currently includes tabs for "Personal Info" and "Password And Security".
+ * 
+ * Uses `TabButton`, `PersonalInfo` (Admin variant), and `PasswordAndSecurity` (Admin variant) components.
+ * 
+ * @returns {JSX.Element} The admin settings page.
+ */
+const Settings = () => {
+    const [activeTab, setActiveTab] = useState('personalInfo');
+
+    return (
+        &lt;div className="flex flex-col w-[70%] px-12 py-10">
+            &lt;p className="text-[24px] font-semibold">Account Settings&lt;/p>
+            &lt;div className="flex gap-x-2 items-center mt-10">
+                &lt;TabButton icon={&lt;TbUserEdit />} text={"Personal Info"} cb={() => setActiveTab('personalInfo')} activeTab={activeTab} tabName={"personalInfo"} />
+                &lt;TabButton icon={&lt;FaUnlockAlt />} text={"Password And Security"} cb={() => setActiveTab('passwordAndSecurity')} activeTab={activeTab} tabName={"passwordAndSecurity"} />
+            &lt;/div>
+            &lt;hr className="border-[#55595F] border-1" />
+            {activeTab === "personalInfo" &amp;&amp; &lt;PersonalInfo />}
+            {activeTab === "passwordAndSecurity" &amp;&amp; &lt;PasswordAndSecurity isAdmin={true} />}
+        &lt;/div> 
+    )
+}
+
+export default Settings;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

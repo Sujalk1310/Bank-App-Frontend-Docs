@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Admin/LoginAdmin.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Admin/LoginAdmin.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import LoginImage from '../../assets/Hand.png';
+import BlobImage from '../../assets/Blob.png';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import OtpInput from 'react-otp-input';
+import toast from 'react-hot-toast';
+import Loader from '../../components/Loader';
+import CustomButton from '../../components/CustomButton';
+import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { AdminContext } from '../../contexts/AdminToken';
+import { EmployeeContext } from '../../contexts/EmployeeToken';
+import { postAPI } from '../../caller/axiosUrls';
+
+/**
+ * Admin Login page component.
+ * 
+ * Handles admin authentication with username, password, and Google reCAPTCHA.
+ * Includes a basic (currently mocked) "Forgot Password" flow that shows an OTP input panel.
+ * Clears session storage and context tokens on mount.
+ * Navigates to the admin panel upon successful login.
+ * 
+ * @returns {JSX.Element} The admin login page.
+ */
+const LoginAdmin = () => {
+    const [sender, setSender] = useState(false);
+    const [showOTPPanel, setShowOTPPanel] = useState(false);
+    const [roundLoader, setRoundLoader] = useState(false);
+    const [mockNumber, setMockNumber] = useState('');
+    const [otp, setOTP] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+
+    const navigate = useNavigate();
+    const { executeRecaptcha } = useGoogleReCaptcha();
+
+    const { setToken } = useContext(EmployeeContext);
+    const { setAdToken } = useContext(AdminContext);
+
+    /**
+     * Handles the "Forgot Password" action.
+     * Currently mocks the process by showing an OTP panel and a masked phone number.
+     * Requires username and reCAPTCHA execution.
+     * TODO: Implement actual forgot password API call and OTP logic.
+     */
+    const handleForgotPassword = async () => {
+        if (!username) {
+            toast("Please provide username!", {
+                icon: "⚠️",
+            });
+            return;
+        }
+
+        if (!executeRecaptcha) {
+            
+            toast("Recaptcha not yet available. Try again later.", {
+              icon: "⚠️",
+            });
+            return;
+        }
+
+        if (roundLoader) return;
+        else setRoundLoader(true);
+
+        try {
+            setMockNumber('+9184xxxxxx48');
+            setShowOTPPanel(true);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setRoundLoader(false);
+        }
+    }
+
+    /**
+     * Handles the login attempt.
+     * Validates input fields, executes reCAPTCHA, calls the login API.
+     * On success, stores the admin token in session storage and context, then navigates to the admin panel.
+     * Displays error toasts on failure.
+     */
+    const handleLogin = async () => {
+        if (!username || !password) {
+            toast("All required fields are not filled!", {
+                icon: "⚠️",
+            });
+            return;
+        } 
+
+        if (!executeRecaptcha) {
+            toast("Recaptcha not yet available. Try again later.", {
+              icon: "⚠️",
+            });
+            return;
+        }
+
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI('/admin/login', {
+                username,
+                password,
+                captchaToken: await executeRecaptcha("login")   
+            });
+            sessionStorage.setItem("ad-token", response.token);
+            sessionStorage.setItem("admin-id", response.id);
+            setAdToken(response.token);
+            navigate('/admin');
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    useEffect(() => {
+        sessionStorage.clear();
+        setToken(null);
+        setAdToken(null);
+    }, []);
+
+    return (
+        &lt;div className="w-screen h-screen overflow-hidden flex">
+            &lt;div className="grow min-w-1/2 bg-primary-blue p-20">
+                &lt;div className="flex flex-col h-full justify-center items-center">
+                    &lt;div className="w-2/3 relative top-[-20px]">
+                        &lt;img className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-cover' src={BlobImage} alt="Blob Image" />
+                        &lt;img className='absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 object-cover' src={LoginImage} alt="Login Page Image" />
+                    &lt;/div> 
+                    &lt;div className='relative bottom-[-200px]'>
+                        &lt;p className='text-primary-white text-[30px] text-center font-semibold' dangerouslySetInnerHTML={{ __html: import.meta.env.VITE_TITLE }} />
+                        &lt;p className='text-primary-white text-center mt-5' dangerouslySetInnerHTML={{ __html: import.meta.env.VITE_SLOGAN }} />
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+            &lt;div className="grow min-w-1/2 bg-white px-14 py-10">
+                &lt;div className="flex flex-col h-full">
+                    &lt;p className="self-end text-primary-blue text-[36px] font-bold" dangerouslySetInnerHTML={{ __html: import.meta.env.VITE_COMPANY_NAME }} />
+                    &lt;p className="self-end text-primary-blue text-[18px]" dangerouslySetInnerHTML={{ __html: import.meta.env.VITE_COMPANY_TAG }} />
+                    &lt;div className='w-[60%] h-full flex flex-col justify-center mx-auto grow'>
+                        {roundLoader ? 
+                        &lt;Loader text={"Loading..."} /> :
+                        showOTPPanel ?
+                        &lt;>
+                            &lt;div className='flex items-end justify-between'>
+                                &lt;p className='text-[30px] font-semibold'>Verify Your Identity&lt;/p>
+                            &lt;/div>
+                            &lt;p className='mt-5 cursor-pointer w-fit text-sm'>We've just sent a text message and mail with your security code on the number {mockNumber}&lt;/p>
+                            &lt;div className='flex flex-col mt-5'>
+                                &lt;label htmlFor='otp'>Please enter the code in order to continue&lt;/label>
+                                &lt;OtpInput
+                                    value={otp}
+                                    containerStyle={{ marginTop: "40px" }}
+                                    inputStyle={{ border: "1px solid #cacaca", width: "42px", height: "45px", borderRadius: "5px" }}
+                                    shouldAutoFocus={true}
+                                    onChange={setOTP}
+                                    placeholder='0'
+                                    inputType='number'
+                                    numInputs={4}
+                                    renderSeparator={&lt;span className='w-5'>&lt;/span>}
+                                    renderInput={(props) => &lt;input {...props} />}
+                                />
+                            &lt;/div>
+                            &lt;CustomButton sender={sender} text={"Verfiy"} classes={"mt-10"} />
+                            &lt;p onClick={() => setShowOTPPanel(false)} className='mt-5 cursor-pointer w-fit text-primary-green'>Not You?&lt;/p>
+                        &lt;/>
+                        :
+                        &lt;>
+                            &lt;div className='flex items-end justify-between'>
+                                &lt;p className='text-[30px] font-semibold'>Log in&lt;/p>
+                                &lt;p className='text-sm'>(&lt;span onClick={() => navigate('/login/employee')} className='cursor-pointer text-primary-green'>Employee&lt;/span>)&lt;/p>
+                            &lt;/div>
+                            &lt;div className='flex flex-col mt-5'>
+                                &lt;label htmlFor='username'>Username&lt;/label>
+                                &lt;input maxLength="50" value={username} onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleLogin();
+                                }} onChange={(e) => setUsername(e.target.value)} disabled={sender} className='mt-5 form-input' id="username" type="text" placeholder='johndoe1975' />
+                            &lt;/div>
+                            &lt;div className='flex flex-col mt-5'>
+                                &lt;label htmlFor='password'>Password&lt;/label>
+                                &lt;input maxLength="200" value={password} onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleLogin();
+                                }} onChange={(e) => setPassword(e.target.value)} disabled={sender} className='mt-5 form-input' id="password" type="password" placeholder='••••••••••••' />
+                            &lt;/div>
+                            &lt;CustomButton sender={sender} text={"Log in"} cb={handleLogin} classes={"mt-10"} />
+                            &lt;p onClick={handleForgotPassword} className='mt-5 cursor-pointer w-fit text-primary-green'>Forgot your password?&lt;/p>
+                        &lt;/>}
+                    &lt;/div>
+                &lt;/div> 
+            &lt;/div>
+        &lt;/div>
+    )
+}
+
+export default LoginAdmin;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

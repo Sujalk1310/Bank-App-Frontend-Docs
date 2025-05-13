@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/Accounts/Create.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/Accounts/Create.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import { MdDeselect } from "react-icons/md";
+import Select from "react-select";
+import SearchableDropdown from '../../../components/SearchableDropdown';
+import CustomButton from '../../../components/CustomButton';
+import OD from "./OD";
+import RD from './RD';
+import FD from './FD';
+import toast from "react-hot-toast";
+import { postAPI } from "../../../caller/axiosUrls";
+import { useNavigate } from "react-router-dom";
+
+/**
+ * Create Account page component (Employee view).
+ * 
+ * Provides a form for creating new member accounts of different types (OD, RD, FD).
+ * - Uses a `Select` component to choose the account type.
+ * - Conditionally renders the appropriate plan/detail component (`OD`, `RD`, `FD`) based on the selected type.
+ * - Uses `SearchableDropdown` to find and select the member for the account.
+ * - Displays a summary of the selected plan (for RD/FD) or initial deposit (for OD) and the selected member on the right side.
+ * - Handles form submission, performing validation and calling the `/employee/create-account` API.
+ * - Navigates to the newly created account's info page (`/employee/accounts/:accountNumber`) on success.
+ * 
+ * @returns {JSX.Element} The account creation page.
+ */
+const Create = () => {
+    const [activeTab, setActiveTab] = useState({
+        value: 'OD',
+        label: 'Optional Deposit (OD)',
+    });
+    const [selectedPlan, setSelectedPlan] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [initialDeposit, setInitialDeposit] = useState('');
+    const [sender, setSender] = useState(false);
+
+    const navigate = useNavigate();
+
+    const accTypes = [{
+        value: 'OD',
+        label: 'Optional Deposit (OD)',
+    }, {
+        value: 'RD',
+        label: 'Recurrent Deposit (RD)',
+    }, {
+        value: 'FD',
+        label: 'Fixed Deposit (FD)',
+    }]
+
+    /**
+     * Handles the account creation form submission.
+     * Validates that a member and plan (or initial deposit for OD) are selected.
+     * Constructs the payload based on the account type.
+     * Calls the `/employee/create-account` API endpoint.
+     * Navigates to the new account's info page on success.
+     */
+    const handleSubmit = async () => {
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            let data = {};
+            if (activeTab.value === "OD") {
+                if (!initialDeposit) {
+                    toast("Initial Deposit must be there!", {
+                        icon: "⚠️"
+                    });
+                    return;
+                }
+                if (!selectedMember) {
+                    toast("Member must be selected!", {
+                        icon: "⚠️"
+                    });
+                    return;
+                }
+                data.accountType = "od";
+                data.initialDeposit = initialDeposit;
+                data.membershipNumber = selectedMember.value.membershipNumber;
+            } else {
+                if (!selectedPlan) {
+                    toast("Plan must be selected!", {
+                        icon: "⚠️"
+                    });
+                    return;
+                }
+                if (!selectedMember) {
+                    toast("Member must be selected!", {
+                        icon: "⚠️"
+                    });
+                    return;
+                }
+                data.initialDeposit = selectedPlan.amount;
+                data.roi = selectedPlan.scheme.interestRate;
+                data.tenureInMonths = selectedPlan.scheme.tenure;
+                data.membershipNumber = selectedMember.value.membershipNumber;
+            }
+
+            if (activeTab.value === "RD") {
+                data.accountType = "rd";
+            } else if (activeTab.value === "FD") {
+                data.accountType = "fd";
+            }
+
+            const response = await postAPI('/employee/create-account', data);
+            navigate(`/employee/accounts/${response.accountNumber}`);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+    
+    return (
+        &lt;>
+            &lt;div className="flex-1 flex overflow-y-hidden">
+                &lt;div className="flex flex-col w-[70%] px-12 py-10 overflow-y-auto no-scrollbar">
+                    &lt;p className="text-[24px] font-semibold">Create Account&lt;/p>
+                    &lt;hr className="border-[#55595F] border-1 mt-5" />
+                    &lt;div className="flex flex-col mt-8 text-[#1E1F26]">
+                        &lt;div className="flex flex-col relative">
+                            &lt;label htmlFor="branchSelect" className="ml-1 required">Select Account Type&lt;/label>
+                            &lt;Select
+                                options={accTypes}
+                                value={activeTab}
+                                onChange={(selected) => {
+                                    setSelectedPlan(null);
+                                    setActiveTab(selected);
+                                }}
+                                className="mt-2"
+                                placeholder="Account Type"
+                                styles={{
+                                    control: (base) => ({
+                                        ...base,
+                                        border: "1px solid #cacaca",
+                                    }),
+                                    container: (base) => ({
+                                        ...base,
+                                        width: "100%"
+                                    }),
+                                    input: (input) => ({
+                                        ...input,
+                                        padding: "5px 10px",
+                                    }),
+                                    singleValue: (singleValue) => ({
+                                        ...singleValue,
+                                        padding: "5px 10px",
+                                    }),
+                                    placeholder: (placeholder) => ({
+                                        ...placeholder,
+                                        padding: "5px 10px"
+                                    }),
+                                }}
+                            />
+                        &lt;/div>
+                    &lt;/div>
+                    {activeTab?.value === "OD" &amp;&amp; &lt;OD initialDeposit={initialDeposit} setInitialDeposit={setInitialDeposit} />}
+                    {activeTab?.value === "RD" &amp;&amp; &lt;RD selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan} />}
+                    {activeTab?.value === "FD" &amp;&amp; &lt;FD selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan} />}
+                    &lt;p className="mt-5 required">Select Member&lt;/p>
+                    &lt;hr className="border-[#55595F] border-1 mt-2" />
+                    &lt;div className="flex flex-col mt-5 text-[#1E1F26]">
+                        &lt;div className="flex flex-col relative">
+                            &lt;SearchableDropdown
+                                debounceTime={500}
+                                url="/employee/get-members"
+                                responseArrayName="members" 
+                                idTag="membershipNumber"
+                                nameTag="memberName"
+                                placeholder={"Search Members..."}
+                                phoneTag="phoneNumber"
+                                onChange={setSelectedMember}
+                            />
+                        &lt;/div>
+                    &lt;/div>
+                    &lt;CustomButton sender={sender} text={"Create Account"} classes={"my-8"} cb={() => handleSubmit()} />
+                &lt;/div>
+                &lt;div className="border-l-2 mt-[100px] mb-10" />
+                &lt;div className="flex-1 flex flex-col items-center overflow-y-auto no-scrollbar justify-center pt-[50px]">
+                    {selectedPlan ? 
+                    activeTab?.value === "RD" ? 
+                    &lt;>
+                        &lt;p className="text-lg font-semibold">Selected RD Plan&lt;/p>
+                        &lt;hr className="border-[#55595F] border-1 my-5 w-2/3" />
+                        &lt;div className="flex flex-col gap-y-2 w-2/3">
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Monthly Amt.&lt;/p>
+                                &lt;p className="text-[18px]">{import.meta.env.VITE_CURRENCY_SYMBOL}{parseFloat(selectedPlan.amount).toFixed(2)}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Tenure&lt;/p>
+                                &lt;p className="text-[18px]">{parseInt(selectedPlan.scheme.tenure)} Months&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Total Deposit&lt;/p>
+                                &lt;p className="text-[18px]">
+                                {import.meta.env.VITE_CURRENCY_SYMBOL}{(parseFloat(selectedPlan.amount) * parseInt(selectedPlan.scheme.tenure)).toFixed(2)}
+                                &lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">ROI&lt;/p>
+                                &lt;p className="text-[18px]">{parseFloat(selectedPlan.scheme.interestRate).toFixed(2)}%&lt;/p>
+                            &lt;/div>
+
+                            {/* Calculate Interest */}
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Interest&lt;/p>
+                                &lt;p className="text-[18px]">
+                                {import.meta.env.VITE_CURRENCY_SYMBOL}{(
+                                    (parseFloat(selectedPlan.amount) *
+                                    parseInt(selectedPlan.scheme.tenure) *
+                                    (parseInt(selectedPlan.scheme.tenure) + 1) *
+                                    parseFloat(selectedPlan.scheme.interestRate)) /
+                                    (2 * 12 * 100)
+                                ).toFixed(2)}
+                                &lt;/p>
+                            &lt;/div>
+
+                            &lt;hr className="border-[#55595F] border-1 my-2" />
+
+                            {/* Calculate Maturity Amount */}
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Mat. Amt.&lt;/p>
+                                &lt;p className="text-[18px]">
+                                {(() => {
+                                    const P = parseFloat(selectedPlan.amount);
+                                    const n = parseInt(selectedPlan.scheme.tenure);
+                                    const r = parseFloat(selectedPlan.scheme.interestRate);
+                                    const interest = (P * n * (n + 1) * r) / (2 * 12 * 100);
+                                    return `${import.meta.env.VITE_CURRENCY_SYMBOL}` + (P * n + interest).toFixed(2);
+                                })()}
+                                &lt;/p>
+                            &lt;/div>
+                        &lt;/div>
+                    &lt;/> :
+                    activeTab?.value === "FD" ? 
+                    &lt;>
+                        &lt;p className="text-lg font-semibold">Selected FD Plan&lt;/p>
+                        &lt;hr className="border-[#55595F] border-1 my-5 w-2/3" />
+                        &lt;div className="flex flex-col gap-y-2 w-2/3">
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Principal&lt;/p>
+                                &lt;p className="text-[18px]">{import.meta.env.VITE_CURRENCY_SYMBOL}{parseFloat(selectedPlan.amount).toFixed(2)}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Tenure&lt;/p>
+                                &lt;p className="text-[18px]">{parseInt(selectedPlan.scheme.tenure)} months&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">ROI&lt;/p>
+                                &lt;p className="text-[18px]">{parseFloat(selectedPlan.scheme.interestRate).toFixed(2)}%&lt;/p>
+                            &lt;/div>
+
+                            {/* Calculate Interest */}
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Interest&lt;/p>
+                                &lt;p className="text-[18px]">
+                                {(() => {
+                                    const P = parseFloat(selectedPlan.amount) || 0;
+                                    const n = parseInt(selectedPlan.scheme.tenure) || 0;
+                                    const r = parseFloat(selectedPlan.scheme.interestRate) || 0;
+                                    const timeInYears = n / 12;
+                                    const interest = (P * r * timeInYears) / 100;
+                                    return `${import.meta.env.VITE_CURRENCY_SYMBOL}` + interest.toFixed(2);
+                                })()}
+                                &lt;/p>
+                            &lt;/div>
+
+                            &lt;hr className="border-[#55595F] border-1 my-2" />
+
+                            {/* Calculate Maturity Amount */}
+                            &lt;div className="flex justify-between">
+                                &lt;p className="text-[18px]">Mat. Amt.&lt;/p>
+                                &lt;p className="text-[18px]">
+                                {(() => {
+                                    const P = parseFloat(selectedPlan.amount) || 0;
+                                    const n = parseInt(selectedPlan.scheme.tenure) || 0;
+                                    const r = parseFloat(selectedPlan.scheme.interestRate) || 0;
+                                    const timeInYears = n / 12;
+                                    const interest = (P * r * timeInYears) / 100;
+                                    const maturity = P + interest;
+                                    return `${import.meta.env.VITE_CURRENCY_SYMBOL}` + maturity.toFixed(2);
+                                })()}
+                                &lt;/p>
+                            &lt;/div>
+                        &lt;/div>
+                    &lt;/> : &lt;>&lt;/>
+                    : 
+                    activeTab?.value !== "OD" &amp;&amp; &lt;div className="flex flex-col gap-y-5 justify-center items-center">
+                        &lt;MdDeselect className="text-[100px]" />
+                        &lt;p className="font-semibold">No plan selected!&lt;/p>
+                    &lt;/div>}
+                    {selectedMember ?
+                    &lt;>
+                        &lt;p className="text-lg mt-10 font-semibold">Selected Member Details&lt;/p>
+                        &lt;hr className="border-[#55595F] border-1 mt-2 mb-5 w-2/3" />
+                        &lt;div className="flex flex-col gap-y-2">
+                            &lt;div className="flex flex-col gap-y-2 items-center justify-center">
+                                &lt;p className="font-semibold">Membership No.&lt;/p>
+                                &lt;p>{selectedMember.value.membershipNumber}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex flex-col gap-y-2 items-center justify-center">
+                                &lt;p className="font-semibold">Member Name&lt;/p>
+                                &lt;p className="truncate max-w-[250px]">{selectedMember.value.memberName}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex flex-col gap-y-2 items-center justify-center">
+                                &lt;p className="font-semibold">Phone No.&lt;/p>
+                                &lt;p className="truncate max-w-[250px]">{selectedMember.value.phoneNumber}&lt;/p>
+                            &lt;/div>
+                        &lt;/div>
+                    &lt;/> 
+                    : &lt;div className="flex mt-10 flex-col gap-y-5 justify-center items-center">
+                        &lt;MdDeselect className="text-[100px]" />
+                        &lt;p className="font-semibold">No member selected!&lt;/p>
+                    &lt;/div>}
+                &lt;/div>
+            &lt;/div>
+        &lt;/>
+    )
+}
+
+export default Create;  </code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

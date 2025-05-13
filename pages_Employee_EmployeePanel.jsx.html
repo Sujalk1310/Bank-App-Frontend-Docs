@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/EmployeePanel.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/EmployeePanel.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useContext, useEffect, useState } from 'react';
+import { EmployeeContext } from '../../contexts/EmployeeToken';
+import { useNavigate, Navigate, useRoutes } from 'react-router-dom';
+import { AdminContext } from '../../contexts/AdminToken';
+import FullPageLoader from '../../components/FullPageLoader';
+import Sidepanel from '../../components/Employee/Sidepanel';
+import Settings from './Settings';
+import UserDetails from '../../components/UserDetails';
+import SearchMembers from './Members/SearchMembers';
+import CreateMembers from './Members/CreateMembers';
+import Profile from './Members/Profile';
+import Create from './Accounts/Create';
+import Accounts from './Accounts/AccountsList';
+import SearchAccount from './Accounts/SearchAccount';
+import AccountInfo from './Accounts/AccountInfo';
+import Deposit from './Transactions/Deposit';
+import Withdraw from './Transactions/Withdraw';
+import History from './Transactions/History';
+import Dashboard from './Dashboard';
+
+/**
+ * Main layout and routing component for the authenticated Employee Panel.
+ * 
+ * - Verifies the employee authentication token (`token`) from `EmployeeContext`.
+ * - Redirects to the employee login page (`/login/employee`) if not authenticated.
+ * - Clears any existing admin token from session storage and `AdminContext`.
+ * - Renders the `Sidepanel` (Employee variant), `UserDetails` (Employee variant), and the current route's element.
+ * - Defines nested routes using `useRoutes` for various employee functionalities:
+ *   - Dashboard
+ *   - Member management (search, create, profile, accounts)
+ *   - Account management (search, create, info)
+ *   - Transactions (deposit search/form, withdraw search/form, history)
+ *   - Loans (view, apply - currently placeholders)
+ *   - Settings
+ * - Shows a `FullPageLoader` while verifying the token or waiting for context to load.
+ * 
+ * @returns {JSX.Element|null} The employee panel layout or null if redirecting/loading.
+ */
+const EmployeePanel = () => {
+    const [isTokenVerified, setIsTokenVerified] = useState(false);
+
+    const navigate = useNavigate();
+
+    const { token, loading } = useContext(EmployeeContext);
+    const { setAdToken } = useContext(AdminContext);
+
+    const routes = [
+        {
+          path: '',
+          element: &lt;Navigate to='/employee/dashboard' />,
+        }, 
+        {
+            path: 'dashboard',    
+            element: &lt;Dashboard />
+        },
+        {
+            path: 'member/:mid',    
+            element: &lt;Profile />
+        },
+        {
+            path: 'member/:mid/accounts',    
+            element: &lt;Accounts />
+        },
+        {
+            path: 'members/search',    
+            element: &lt;SearchMembers />
+        },
+        {
+            path: 'members/create',    
+            element: &lt;CreateMembers />
+        },
+        {
+            path: 'accounts/search',    
+            element: &lt;SearchAccount />
+        },
+        {
+            path: 'accounts/create',    
+            element: &lt;Create />
+        },
+        {
+            path: 'accounts/:aid',    
+            element: &lt;AccountInfo />
+        },
+        {
+            path: 'loans/view',    
+            element: &lt;>Loans View&lt;/>
+        },
+        {
+            path: 'loans/apply',    
+            element: &lt;>Loans Apply&lt;/>
+        },
+        {
+            path: 'transactions/deposit',    
+            element: &lt;SearchAccount deposit={true} />
+        },
+        {
+            path: 'transactions/deposit/:aid',    
+            element: &lt;Deposit />
+        },
+        {
+            path: 'transactions/withdraw',    
+            element: &lt;SearchAccount withdraw={true} />
+        },
+        {
+            path: 'transactions/withdraw/:aid',    
+            element: &lt;Withdraw />
+        },
+        {
+            path: 'transactions/history',    
+            element: &lt;History />
+        },
+        {
+            path: 'settings',    
+            element: &lt;Settings />
+        },
+        {
+          path: "*",
+          element: &lt;Navigate to='/employee/dashboard' />
+        }
+    ];
+
+    /**
+     * Placeholder function for token verification logic.
+     * Currently just sets `isTokenVerified` to true.
+     * TODO: Implement actual token verification if needed (e.g., check expiry, call backend).
+     */
+    const verifyToken = async () => {
+        try {
+            setIsTokenVerified(true);
+        } catch (error) {
+            setIsTokenVerified(false);
+            toast.error(error.message);
+        } 
+    }
+
+    useEffect(() => {
+        verifyToken();
+    }, []);
+
+    // Removing admin session
+    useEffect(() => {
+        sessionStorage.removeItem('ad-token');
+        setAdToken(null);
+    }, [])
+
+    useEffect(() => {
+        if (loading) return;
+        if (!token) navigate('/login/employee');
+    }, [loading, token]);
+
+    const element = useRoutes(routes);
+    
+    return (
+        &lt;>
+            {(loading || !isTokenVerified) &amp;&amp; &lt;FullPageLoader />}
+            {token &amp;&amp; 
+            &lt;div className="w-screen h-screen flex relative">
+                &lt;Sidepanel />
+                &lt;UserDetails isAdmin={false} />
+                &lt;div className="flex flex-col grow overflow-x-hidden">
+                    {element}
+                &lt;/div>
+            &lt;/div>}
+        &lt;/>
+    )
+}
+
+export default EmployeePanel;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

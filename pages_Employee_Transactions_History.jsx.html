@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/Transactions/History.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/Transactions/History.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import Loader from "../../../components/Loader";
+import toast from "react-hot-toast";
+import { getAPI } from "../../../caller/axiosUrls";
+import NotFound from '../../../components/NotFound';
+
+/**
+ * Transaction History page component (Employee view).
+ * Fetches and displays a list of all recent transactions associated with the logged-in employee.
+ * Shows transaction timestamp, account number, amount (with +/- sign), and mode (credit/debit).
+ * 
+ * @returns {JSX.Element} The transaction history page.
+ */
+const History = () => {
+    const [sender, setSender] = useState(false);
+    const [transactions, setTransactions] = useState(null);
+
+    /**
+     * Fetches the transaction history from the API.
+     * Updates the `transactions` state.
+     */
+    const getData = async () => {
+        setSender(true);     
+        try {
+            const response = await getAPI(`/employee/transactions/history`);
+            setTransactions(response.transactions);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    useEffect(() => {
+        getData();
+    }, [])
+    
+    return (
+        &lt;div className="flex flex-col w-[70%] px-12 py-10">
+            &lt;p className="text-[24px] font-semibold flex justify-between">Transaction History&lt;/p>
+            &lt;hr className="border-[#55595F] border-1 mt-5" />
+            &lt;div className="bg-white border-2 flex px-5 py-2 mt-4 border-black/30 shadow-md rounded-xl">
+                &lt;p className="w-[250px]">Timestamp&lt;/p>
+                &lt;p className="flex-1 text-center">Account&lt;/p>
+                &lt;p className="w-[300px] text-right truncate mr-10">Amount&lt;/p>
+                &lt;p className="w-[100px] text-center">Mode&lt;/p>
+            &lt;/div>
+            &lt;div className="flex flex-col text-[#1E1F26]">
+                {sender ? &lt;Loader classes={"mt-20"} text={"Fetching..."} /> :
+                    transactions?.length ? transactions.map((transaction, index) => (
+                    &lt;div key={"transaction-" + index} className="bg-[#F8F9FA] border flex justify-evenly px-5 py-2 mt-4 border-white rounded-xl shadow-md" >
+                        &lt;p className="w-[250px]">{new Date(transaction?.dateTime).toLocaleString()}&lt;/p>
+                        &lt;p className="flex-1 text-center">{transaction?.account.accountNumber}&lt;/p>
+                        &lt;p className={`w-[300px] mr-10 text-right truncate ${transaction?.mode === "debit" ? "text-red-500" : "text-green-500"}`}>{transaction?.mode === "debit" ? "-" : "+"}{import.meta.env.VITE_CURRENCY_SYMBOL}{transaction?.amount}&lt;/p>
+                        &lt;p className={`w-[100px] capitalize text-center ${transaction?.mode === "debit" ? "text-red-500" : "text-green-500"}`}>{transaction?.mode}&lt;/p>
+                    &lt;/div>
+                )) : &lt;NotFound text={"No Transactions Found!"} classes={"mt-20"} /> }
+            &lt;/div>
+        &lt;/div>
+    )
+}
+
+export default History;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

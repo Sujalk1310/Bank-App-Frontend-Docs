@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Admin/PersonalInfo.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Admin/PersonalInfo.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import CustomButton from '../CustomButton';
+import { MdOutlineDone } from "react-icons/md";
+import { IoCloseOutline } from "react-icons/io5";
+import FormSkeleton from '../FormSkeleton';
+import toast from "react-hot-toast";
+import { IoMdInformationCircleOutline } from "react-icons/io";
+import OtpInput from 'react-otp-input';
+import { isValidEmail, isValidPhoneNumber } from '../../utils/validator';
+import { getAPI, postAPI } from "../../caller/axiosUrls";
+
+/**
+ * Component for displaying and updating the Admin's personal information (Email and Phone Number).
+ * Includes functionality for sending and verifying OTPs for changes.
+ * Manages various states for input values, validation, OTP display, API loading, and fetching.
+ * 
+ * @returns {JSX.Element} The personal information form component.
+ */
+const PersonalInfo = () => {
+    const [email, setEmail] = useState('');
+    const [originalEmail, setOriginalEmail] = useState('');
+    const [correctEmail, setCorrectEmail] = useState(true);
+    const [showEmailOTP, setShowEmailOTP] = useState(false);
+    const [disableEmailChange, setDisableEmailChange] = useState(false);
+    const [emailResetToken, setEmailResetToken] = useState('');
+    const [emailOTP, setEmailOTP] = useState('');
+    const [changingEmail, setChangingEmail] = useState(false);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [originalPhoneNumber, setOriginalPhoneNumber] = useState('');
+    const [correctPhoneNumber, setCorrectPhoneNumber] = useState(true);
+    const [showPhoneNumberOTP, setShowPhoneNumberOTP] = useState(false);
+    const [phoneNumberResetToken, setPhoneNumberResetToken] = useState('');
+    const [disablePhoneNumberChange, setDisablePhoneNumberChange] = useState(false);
+    const [phoneNumberOTP, setPhoneNumberOTP] = useState('');
+    const [changingPhoneNumber, setChangingPhoneNumber] = useState(false);
+    const [sender, setSender] = useState(false);
+    const [fetchingDetails, setFetchingDetails] = useState(true);
+
+    /**
+     * Fetches the current admin's details (email, phone number) from the API on component mount.
+     * Updates the component's state with the fetched data.
+     */
+    const fetchDetails = async () => {
+        setFetchingDetails(true);
+        
+        try {
+            const response = await getAPI('/admin/getAdminDetails')
+            setOriginalEmail(response.email);
+            setEmail(response.email);
+            setOriginalPhoneNumber(response.phoneNumber);
+            setPhoneNumber(response.phoneNumber);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setFetchingDetails(false);
+        }
+    }
+
+    /**
+     * Handles changes to the email input field.
+     * Updates the email state and validates the format.
+     * @param {string} value - The new value from the email input.
+     */
+    const handleEmailChange = (value) => {
+        if (disableEmailChange) return;
+        setEmail(value);
+        setCorrectEmail(isValidEmail(value));
+    }
+
+    /**
+     * Cancels the email change process.
+     * Resets the email field to the original value and hides the OTP input.
+     */
+    const handleEmailChangeCancel = () => {
+        setDisableEmailChange(false);
+        setEmail(originalEmail);
+        setShowEmailOTP(false);
+    }
+
+    /**
+     * Handles changes to the phone number input field.
+     * Updates the phone number state and validates the format.
+     * @param {string} value - The new value from the phone number input.
+     */
+    const handlePhoneNumberChange = (value) => {
+        if (disablePhoneNumberChange) return;
+        setPhoneNumber(value);
+        setCorrectPhoneNumber(isValidPhoneNumber(value));
+    }
+
+    /**
+     * Cancels the phone number change process.
+     * Resets the phone number field to the original value and hides the OTP input.
+     */
+    const handlePhoneNumberChangeCancel = () => {
+        setDisablePhoneNumberChange(false);
+        setPhoneNumber(originalPhoneNumber);
+        setShowPhoneNumberOTP(false);
+    }
+
+    /**
+     * Initiates the email verification process.
+     * Sends a request to the API to send an OTP to the new email address.
+     * Stores the reset token and displays the OTP input field.
+     */
+    const verifyEmail = async () => {
+        if (!correctEmail || !email) {
+            toast("Please provide a valid email!", {
+                icon: "⚠️"
+            })
+            return;
+        }
+        
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            setDisableEmailChange(true);
+            const response = await postAPI('/admin/send-otp', {
+                newEmail: email,
+                mode: "mail"
+            });
+            setEmailResetToken(response.resetToken);
+            toast.success(response.message);
+            setShowEmailOTP(true);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Initiates the phone number verification process.
+     * Sends a request to the API to send an OTP to the new phone number.
+     * Stores the reset token and displays the OTP input field.
+     */
+    const verifyPhoneNumber = async () => {
+        if (!correctPhoneNumber || !phoneNumber) {
+            toast("Please provide a valid phone number!", {
+                icon: "⚠️"
+            })
+            return;
+        }
+        
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            setDisablePhoneNumberChange(true);
+            const response = await postAPI('/admin/send-otp', {
+                newPhoneNumber: phoneNumber,
+                mode: "sms"
+            });
+            setPhoneNumberResetToken(response.resetToken);
+            toast.success(response.message);
+            setShowPhoneNumberOTP(true);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Verifies the OTP entered for email change.
+     * Sends the OTP, new email, and reset token to the API.
+     * Updates the email state on success and hides the OTP input.
+     */
+    const VerifyEmailOTP = async () => {
+        if (emailOTP.length !== 4) {
+            toast("Please provide a valid OTP!", {
+                icon: "⚠️"
+            })
+            return;
+        }
+
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            setShowEmailOTP(false);
+            setChangingEmail(true);
+            const response = await postAPI('/admin/verify-otp', {
+                newEmail: email, 
+                otp: emailOTP,
+                resetToken: emailResetToken,
+                mode: "mail"
+            })
+            setOriginalEmail(response.email);
+            setEmail(response.email);
+            setDisableEmailChange(false);
+            toast.success("Email updated successfully!");
+        } catch (error) {
+            toast.error(error.message);
+            setShowEmailOTP(true);
+        } finally {
+            setEmailOTP('');
+            setSender(false);
+            setChangingEmail(false);
+        }
+    }
+
+    /**
+     * Verifies the OTP entered for phone number change.
+     * Sends the OTP, new phone number, and reset token to the API.
+     * Updates the phone number state on success and hides the OTP input.
+     */
+    const VerifyPhoneNumberOTP = async () => {
+        if (phoneNumberOTP.length !== 4) {
+            toast("Please provide a valid OTP!", {
+                icon: "⚠️"
+            })
+            return;
+        }
+
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            setShowPhoneNumberOTP(false);
+            setChangingPhoneNumber(true);
+            const response = await postAPI('/admin/verify-otp', {
+                otp: phoneNumberOTP,
+                resetToken: phoneNumberResetToken,
+                mode: "sms",
+                newPhoneNumber: phoneNumber
+            })
+            setOriginalPhoneNumber(response.phoneNumber);
+            setPhoneNumber(response.phoneNumber);
+            setDisablePhoneNumberChange(false);
+            toast.success("Phone number updated successfully!");
+        } catch (error) {
+            toast.error(error.message);
+            setShowPhoneNumberOTP(true);
+        } finally {
+            setPhoneNumberOTP('');
+            setSender(false);
+            setChangingPhoneNumber(false);
+        }
+    }
+
+    useEffect(() => {
+        fetchDetails();
+        setShowEmailOTP(false);
+        setShowPhoneNumberOTP(false);
+    }, [])
+
+    return (
+        &lt;div className="flex flex-col text-[#1E1F26]">
+            &lt;div className="flex flex-col mt-8 relative">
+                &lt;label htmlFor="email" className="ml-1">Email&lt;/label>
+                {fetchingDetails ? 
+                    &lt;FormSkeleton width={400} height={20} classes={"mt-2"} /> : 
+                    &lt;input onKeyDown={(e) => {
+                        if (e.key === "Enter" &amp;&amp; correctEmail) verifyEmail()
+                    }} maxLength="320" disabled={sender || fetchingDetails || disableEmailChange} id="email" className="form-input mt-2" placeholder="example@xyz.com" value={email} onChange={(e) => handleEmailChange(e.target.value)} />}
+                {(email !== originalEmail) ? &lt;span className="absolute bottom-3 right-4">{correctEmail ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+            &lt;/div>
+            &lt;div className={`${(email !== originalEmail) ? 'h-[60px]' : 'h-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] flex mt-4 items-center overflow-hidden`}>
+                &lt;div className={`${(showEmailOTP) ? 'w-[500px] mr-5' : 'w-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] overflow-hidden`}>
+                    &lt;OtpInput
+                        value={emailOTP}
+                        inputStyle={{ border: "1px solid #cacaca", width: "42px", height: "45px", borderRadius: "5px" }}
+                        shouldAutoFocus={true}
+                        onChange={setEmailOTP}
+                        inputType='number'
+                        numInputs={4}
+                        renderSeparator={&lt;span className='w-5'>&lt;/span>}
+                        renderInput={(props) => &lt;input {...props} />}
+                    />  
+                &lt;/div>    
+                &lt;div className="flex grow">
+                    &lt;CustomButton sender={sender} cb={showEmailOTP ? VerifyEmailOTP : verifyEmail} disabledCond={(!(email !== originalEmail))} text={showEmailOTP ? "Verify OTP" : "Verify Email"} classes={"grow"} />
+                    &lt;div className={`${(!changingEmail) ? 'max-w-[50%] grow ml-5' : 'max-w-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] overflow-hidden`}>
+                        &lt;CustomButton cb={handleEmailChangeCancel} disabledCond={(sender || !(email !== originalEmail))} text={"Cancel"} secondary={true} classes={"w-full"} />
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+            {showEmailOTP &amp;&amp; &lt;p className="text-sm my-2 text-yellow-600 flex items-center gap-x-2">&lt;IoMdInformationCircleOutline className="text-xl" /> OTP will be expired in 10 minutes!&lt;/p>}
+            &lt;div className="flex flex-col mt-2 relative">
+                &lt;label htmlFor="phoneNumber" className="ml-1">Phone Number&lt;/label>
+                {fetchingDetails ? 
+                    &lt;FormSkeleton width={400} height={20} classes={"mt-2"} /> : 
+                    &lt;input onKeyDown={(e) => {
+                        if (e.key === "Enter" &amp;&amp; correctPhoneNumber) verifyPhoneNumber()
+                    }} maxLength="20" disabled={sender || fetchingDetails || disablePhoneNumberChange} id="phoneNumber" className="form-input mt-2" placeholder="+91 XXXXXXXXXX (with country code)" value={phoneNumber} onChange={(e) => handlePhoneNumberChange(e.target.value)} />}
+                {(phoneNumber !== originalPhoneNumber) ? &lt;span className="absolute bottom-3 right-4">{correctPhoneNumber ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+            &lt;/div>
+            &lt;div className={`${(phoneNumber !== originalPhoneNumber) ? 'h-[60px]' : 'h-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] flex mt-4 items-center overflow-hidden`}>
+                &lt;div className={`${(showPhoneNumberOTP) ? 'w-[500px] mr-5' : 'w-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] overflow-hidden`}>
+                    &lt;OtpInput
+                        value={phoneNumberOTP}
+                        inputStyle={{ border: "1px solid #cacaca", width: "42px", height: "45px", borderRadius: "5px" }}
+                        shouldAutoFocus={true}
+                        onChange={setPhoneNumberOTP}
+                        inputType='number'
+                        numInputs={4}
+                        renderSeparator={&lt;span className='w-5'>&lt;/span>}
+                        renderInput={(props) => &lt;input {...props} />}
+                    />  
+                &lt;/div>    
+                &lt;div className="flex grow">
+                    &lt;CustomButton sender={sender} cb={showPhoneNumberOTP ? VerifyPhoneNumberOTP : verifyPhoneNumber} disabledCond={(!(phoneNumber !== originalPhoneNumber))} text={showPhoneNumberOTP ? "Verify OTP" : "Verify Phone Number"} classes={"grow"} />
+                    &lt;div className={`${(!changingPhoneNumber) ? 'max-w-[50%] grow ml-5' : 'max-w-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] overflow-hidden`}>
+                        &lt;CustomButton cb={handlePhoneNumberChangeCancel} disabledCond={(sender || !(phoneNumber !== originalPhoneNumber))} text={"Cancel"} secondary={true} classes={"w-full"} />
+                    &lt;/div>
+                &lt;/div>
+            &lt;/div>
+            {showPhoneNumberOTP &amp;&amp; &lt;p className="text-sm my-2 text-yellow-600 flex items-center gap-x-2">&lt;IoMdInformationCircleOutline className="text-xl" /> OTP will be expired in 10 minutes!&lt;/p>}
+        &lt;/div>
+    )
+}
+
+export default PersonalInfo;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

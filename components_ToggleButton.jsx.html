@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/ToggleButton.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/ToggleButton.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useEffect } from 'react';
+ 
+/**
+ * A reusable toggle switch component.
+ * 
+ * @param {object} props - The component props.
+ * @param {string} [props.id] - The ID attribute for the toggle button container.
+ * @param {boolean} [props.defaultChecked=false] - The initial state of the toggle button.
+ * @param {function} [props.onChange] - Callback function triggered when the toggle state changes. Passes the new boolean state.
+ * @param {number} [props.color] - Color theme variant (e.g., 2 for a lighter blue). Defaults to primary blue.
+ * @param {boolean} [props.disabled=false] - If true, the toggle button is disabled.
+ * @returns {JSX.Element} The toggle button component.
+ */
+const ToggleButton = ({ id, defaultChecked, onChange, color, disabled }) => {
+  const [isOn, setIsOn] = useState(defaultChecked || false);
+ 
+  useEffect(() => {
+    setIsOn(defaultChecked);
+  }, [defaultChecked]);
+ 
+  /**
+   * Toggles the state of the button (on/off) if not disabled.
+   * Calls the onChange callback with the new state.
+   */
+  const toggle = () => {
+    if (disabled) return;
+    setIsOn(!isOn);
+    onChange &amp;&amp; onChange(!isOn); // Call onChange if provided
+  };
+ 
+  return (
+    &lt;div
+      id={id}
+      onClick={toggle}
+      className={`w-14 h-8 flex ${disabled ? 'not-allowed' : ''} items-center rounded-full p-1 cursor-pointer transition-colors duration-300 ${
+        isOn ? (color === 2 ? 'bg-[#94ABFF]' : 'bg-[#2E5BFF]') : 'bg-gray-300'
+      }`}
+    >
+      &lt;div
+        className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-300 ${
+          isOn ? 'translate-x-6' : 'translate-x-0'
+        }`}
+      />
+    &lt;/div>
+  );
+};
+ 
+export default ToggleButton;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

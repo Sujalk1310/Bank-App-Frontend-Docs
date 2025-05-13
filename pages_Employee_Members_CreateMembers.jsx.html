@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/Members/CreateMembers.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/Members/CreateMembers.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import NotFound from "../../../components/NotFound";
+import Select from "react-select";
+import { getAPI, postAPIMedia } from "../../../caller/axiosUrls";
+import Loader from "../../../components/Loader";
+import ToggleButton from '../../../components/ToggleButton';
+import CustomButton from '../../../components/CustomButton';
+import { MdOutlineDone } from "react-icons/md";
+import { IoCloseOutline } from "react-icons/io5";
+import CurrencyInput from 'react-currency-input-field';
+import { isValidEmail, isValidPhoneNumber, isValidPanCard, isValidAadharNumber } from '../../../utils/validator';
+import { useNavigate } from "react-router-dom";
+
+/**
+ * Create Member page component (Employee view).
+ * Provides a comprehensive form for registering a new member.
+ * 
+ * Features:
+ * - Fetches dropdown options (branches, titles, genders, occupations).
+ * - Fetches and displays membership fee structure based on the selected branch.
+ * - Captures member details (name, ID, F/H name, DOB, age, income, gender, etc.).
+ * - Handles KYC documents: Photo, Signatures (Applicant &amp; Introducer), Address Proof, Aadhar, PAN.
+ *   - Includes file upload inputs with validation (type, size).
+ * - Manages Present and Permanent Addresses (with "Same as Present" toggle).
+ * - Captures Contact Info (Email, Phone) with validation.
+ * - Records Company/Occupation details.
+ * - Manages Nominee details.
+ * - Records Introducer details.
+ * - Submits new member data (including files) via multipart/form-data API call (`/employee/create-member`).
+ * - Navigates to the newly created member's profile page (`/employee/member/:membershipNumber`) on success.
+ * 
+ * Functionally very similar to the `Profile.jsx` component but for creation instead of editing.
+ * 
+ * @returns {JSX.Element} The create member page component.
+ */
+const CreateMembers = () => {
+    const [memberName, setMemberName] = useState("");
+    const [fhName, setFhName] = useState('');
+    const [sender, setSender] = useState(false);
+    const [branches, setBranches] = useState([]);
+    const [titles, setTitles] = useState([]);
+    const [error, setError] = useState(false);
+    const [membershipAmountSet, setMembershipAmountSet] = useState([]);
+    const [selectedBranch, setSelectedBranch] = useState(null);
+    const [selectedTitle, setSelectedTitle] = useState(null);
+    const [motherName, setMotherName] = useState('');
+    const [dob, setDob] = useState(new Date());
+    const [age, setAge] = useState('');
+    const [monthlyIncome, setMonthlyIncome] = useState('');
+    const [formattedMonthlyIncome, setFormattedMonthlyIncome] = useState('');
+    const [genderList, setGenderList] = useState([]);
+    const [selectedGender, setSelectedGender] = useState(null);
+    const [occupationList, setOccupationList] = useState([]);
+    const [selectedOccupation, setSelectedOccupation] = useState(null);
+    const [panNo, setPanNo] = useState('');
+    const [correctPanNo, setCorrectPanNo] = useState(true);
+    const [aadharNo, setAadharNo] = useState('');
+    const [correctAadharNo, setCorrectAadharNo] = useState(true);
+    const [isMarried, setIsMarried] = useState(false);
+    const [ownHouseProperty, setOwnHouseProperty] = useState(false);
+    const [selectedFhRelation, setSelectedFhRelation] = useState(null);
+    const [signatureApplicant, setSignatureApplicant] = useState(null);
+    const [signatureApplicantPreview, setSignatureApplicantPreview] = useState(null);
+    const [signatureIntroducer, setSignatureIntroducer] = useState(null);
+    const [signatureIntroducerPreview, setSignatureIntroducerPreview] = useState(null);
+    const [photo, setPhoto] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
+    const [addressProof, setAddressProof] = useState(null);
+    const [addressProofType, setAddressProofType] = useState(null);
+    const [aadharCard, setAadharCard] = useState(null);
+    const [panCard, setPanCard] = useState(null);
+    const [sameAsPresent, setSameAsPresent] = useState(false);
+    const [email, setEmail] = useState('');
+    const [correctEmail, setCorrectEmail] = useState(true);
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [correctPhoneNumber, setCorrectPhoneNumber] = useState(true);
+    const [permanentAddress, setPermanentAddress] = useState('');
+    const [presentAddress, setPresentAddress] = useState('');
+    const [companyName, setCompanyName] = useState('');
+    const [companyAddress, setCompanyAddress] = useState('');
+    const [nomineeName, setNomineeName] = useState('');
+    const [nomineeRelationship, setNomineeRelationship] = useState('');
+    const [nomineeAge, setNomineeAge] = useState('');
+    const [nomineePhone, setNomineePhone] = useState('');
+    const [nomineeEmail, setNomineeEmail] = useState('');
+    const [introducersName, setIntroducersName] = useState('');
+    const [totalAmount, setTotalAmount] = useState(null);
+    const [totalRefundableAmount, setTotalRefundableAmount] = useState(null);
+    const [correctNomineeEmail, setCorrectNomineeEmail] = useState(true);
+    const [correctNomineePhone, setCorrectNomineePhoneNumber] = useState(true);
+    const [submitting, setSubmitting] = useState(false);
+
+    const navigate = useNavigate();
+
+    const PHOTO_MAX_FILE_SIZE = (import.meta.env.VITE_PHOTO_SIZE_LIMIT
+        ? import.meta.env.VITE_PHOTO_SIZE_LIMIT * 1024 * 1024
+        : 2 * 1024 * 1024); // Default 2MB if env is not set\
+
+    const PDF_MAX_FILE_SIZE = (import.meta.env.VITE_PDF_SIZE_LIMIT
+        ? import.meta.env.VITE_PDF_SIZE_LIMIT * 1024 * 1024
+        : 2 * 1024 * 1024); // Default 2MB if env is not set\
+
+    const fhRelation = [{
+        label: "Father",
+        value: 0,
+    }, {
+        label: "Husband",
+        value: 1,
+    }]
+
+    const addressProofDocs = [{
+        label: "Electric Bill",
+        value: 0
+    }, {
+        label: "Water Bill",
+        value: 1,
+    }]
+
+    /**
+     * Calculates age based on the selected date of birth.
+     * Prevents selecting a future date.
+     * @param {Date|string} date - The selected date of birth.
+     */
+    const dobChange = (date) => {
+        const birthDate = new Date(date);
+        const today = new Date();
+
+        if (birthDate > today) {
+            toast("DOB cannot be a future date!", {
+                icon: "⚠️"
+            });
+            return;
+        }
+    
+        let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        // If birthday hasn't happened this year, subtract one year
+        if (monthDiff &lt; 0 || (monthDiff === 0 &amp;&amp; today.getDate() &lt; birthDate.getDate())) {
+            calculatedAge--;
+        }
+    
+        setDob(date);
+        setAge(calculatedAge);
+    };
+
+    /**
+     * Fetches the list of branches from the API.
+     * Formats the response for the `Select` component.
+     * Sets the `branches` state and potentially the default `selectedBranch`.
+     */
+    const getBranchList = async () => {
+        try {
+            const response = await getAPI("/branchmaster/get-all");
+            const formattedBranches = response.branches.map((branch) => ({
+                label: branch.branchName,
+                value: branch._id,
+            }));
+            setBranches(formattedBranches);
+            setSelectedBranch(formattedBranches.length ? formattedBranches[0] : null); // Ensure it's correctly formatted
+        } catch (error) {
+            setError(true);
+            toast.error(error.message);
+        } 
+    };
+
+    /**
+     * Fetches the list of titles (salutations) from the API.
+     * Formats the response for the `Select` component.
+     * Sets the `titles` state and potentially the default `selectedTitle`.
+     */
+    const getTitleList = async () => {
+        try {
+            const response = await getAPI("/title/get-titles");
+            const formattedTitles = response.titles.map((title) => ({
+                label: title.salutation,
+                value: title._id,
+            }));
+
+            setTitles(formattedTitles);
+            setSelectedTitle(formattedTitles.length ? formattedTitles[0] : null); // Ensure it's correctly formatted
+        } catch (error) {
+            setError(true);
+            toast.error(error.message);
+        } 
+    };
+
+    /**
+     * Fetches the list of genders from the API.
+     * Formats the response for the `Select` component.
+     * Sets the `genderList` state and potentially the default `selectedGender`.
+     */
+    const getGenderList = async () => {
+        try {
+            const response = await getAPI("/gender/get-genders");
+            const formattedGenders = response.genderMasters.map((gender) => ({
+                label: gender.genderType,
+                value: gender._id,
+            }));
+
+            setGenderList(formattedGenders);
+            setSelectedGender(formattedGenders.length ? formattedGenders[0] : null); // Ensure it's correctly formatted
+        } catch (error) {
+            setError(true);
+            toast.error(error.message);
+        }
+    }
+
+    /**
+     * Fetches the list of occupations from the API.
+     * Formats the response for the `Select` component.
+     * Sets the `occupationList` state and potentially the default `selectedOccupation`.
+     */
+    const getOccupationList = async () => {
+        try {
+            const response = await getAPI("/occupation/get-occupations");
+            const formattedOccupations = response.occupations.map((occupation) => ({
+                label: occupation.OccupationType,
+                value: occupation._id,
+            }));
+
+            setOccupationList(formattedOccupations);
+            setSelectedOccupation(formattedOccupations.length ? formattedOccupations[0] : null); // Ensure it's correctly formatted
+        } catch (error) {
+            setError(true);
+            toast.error(error.message);
+        }
+    }
+
+    /**
+     * Fetches the membership fee structure for the currently selected branch.
+     * Calculates the total and total refundable amounts based on the fetched structure.
+     * Updates `membershipAmountSet`, `totalAmount`, and `totalRefundableAmount` states.
+     */
+    const getMembershipAmoutSet = async () => {
+        try {
+            const response = await getAPI(`/branchmaster/get-membership?branchId=${selectedBranch.value}`);
+            const membershipSet = response.membershipAmountSet || [];
+            // Calculate total amount and refundable amount
+            const totalAmount = membershipSet.reduce((sum, item) => sum + Number(item.value), 0);
+            const refundableAmount = membershipSet
+                .filter(item => item.refundable) // Only refundable items
+                .reduce((sum, item) => sum + Number(item.value), 0);
+
+            setMembershipAmountSet(membershipSet);
+            setTotalAmount(totalAmount);
+            setTotalRefundableAmount(refundableAmount);
+        } catch (error) {
+            setError(true);
+            toast.error(error.message);
+        }
+    }
+
+    /**
+     * Handles image file uploads (Photo, Signatures).
+     * Validates file type (image/*) and size (PHOTO_MAX_FILE_SIZE).
+     * Updates the corresponding file state and preview state.
+     * @param {File} file - The uploaded file object.
+     * @param {function} setFile - State setter function for the file object.
+     * @param {function} setFilePreview - State setter function for the file preview URL.
+     */
+    const handlePhotoUpload = (file, setFile, setFilePreview) => {
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+            toast.error("Only image files are allowed!");
+            return;
+        }
+
+        // Validate file size
+        if (file.size > PHOTO_MAX_FILE_SIZE) {
+            toast.error(`File size exceeds the limit of (${PHOTO_MAX_FILE_SIZE / (1024 * 1024)} MB)`);
+            return;
+        }
+
+        setFile(file);
+        setFilePreview(URL.createObjectURL(file));
+    };
+
+    /**
+     * Handles PDF file uploads (Address Proof, Aadhar, PAN).
+     * Validates file type (application/pdf) and size (PDF_MAX_FILE_SIZE).
+     * Updates the corresponding file state.
+     * @param {File} file - The uploaded file object.
+     * @param {function} setFile - State setter function for the file object.
+     * @param {function} setFilePreview - (Unused in this function) - State setter for preview.
+     */
+    const handlePDFUpload = (file, setFile, setFilePreview) => {
+        if (!file) return;
+
+        // Validate file type
+        if (!file.type.startsWith("application/pdf")) {
+            toast.error("Only PDF files are allowed!");
+            return;
+        }
+
+        // Validate file size
+        if (file.size > PDF_MAX_FILE_SIZE) {
+            toast.error(`File size exceeds the limit of (${PDF_MAX_FILE_SIZE / (1024 * 1024)} MB)`);
+            return;
+        }
+
+        setFile(file);
+    };
+
+    /**
+     * Handles changes to the email input field.
+     * Updates the email state and validates the format using `isValidEmail`.
+     * @param {string} value - The new email input value.
+     */
+    const handleEmailChange = (value) => {
+        setEmail(value);
+        setCorrectEmail(isValidEmail(value));
+    }
+
+    /**
+     * Handles changes to the nominee's email input field.
+     * Updates the nominee email state and validates the format using `isValidEmail`.
+     * @param {string} value - The new nominee email input value.
+     */
+    const handleNomineeEmailChange = (value) => {
+        setNomineeEmail(value);
+        setCorrectNomineeEmail(isValidEmail(value));
+    }
+
+    /**
+     * Handles changes to the phone number input field.
+     * Updates the phone number state and validates the format using `isValidPhoneNumber`.
+     * @param {string} value - The new phone number input value.
+     */
+    const handlePhoneNumberChange = (value) => {
+        setPhoneNumber(value);
+        setCorrectPhoneNumber(isValidPhoneNumber(value));
+    }
+
+    /**
+     * Handles changes to the PAN number input field.
+     * Updates the PAN number state and validates the format using `isValidPanCard`.
+     * @param {string} value - The new PAN number input value.
+     */
+    const handlePanNoChange = (value) => {
+        setPanNo(value);
+        setCorrectPanNo(isValidPanCard(value));
+    }
+
+    /**
+     * Handles changes to the Aadhar number input field.
+     * Updates the Aadhar number state and validates the format using `isValidAadharNumber`.
+     * @param {string} value - The new Aadhar number input value.
+     */
+    const handleAadharNoChange = (value) => {
+        setAadharNo(value);
+        setCorrectAadharNo(isValidAadharNumber(value));
+    }
+
+    /**
+     * Handles the submission of the new member form.
+     * Performs extensive validation on required fields (including files) and formats.
+     * Constructs a FormData object with all profile details and uploaded files.
+     * Calls the `/employee/create-member` API endpoint with the FormData.
+     * Navigates to the new member's profile page on success.
+     */
+    const handleSubmit = async () => {
+        if (!selectedBranch || !selectedTitle || !memberName || !selectedFhRelation || !fhName || !motherName || !dob || !age || !panNo || !aadharNo || !phoneNumber || !email || !selectedGender || !selectedOccupation || !monthlyIncome || !presentAddress || !companyAddress || !companyName || !nomineeAge || !nomineeEmail || !nomineeName || !nomineePhone || !nomineeRelationship || !introducersName || !photo || !signatureApplicant || !signatureIntroducer || !addressProofType || !addressProof || !aadharCard || !panCard) {
+            toast("All required parameters are npt filled!", {
+                icon: "⚠️"
+            })
+            return;
+        }
+
+        if (sender) return;
+        else setSender(true);
+
+        setSubmitting(true);
+
+        try {
+            const formData = new FormData();
+            formData.append("selectedBranch", selectedBranch.value);
+            formData.append("selectedTitle", selectedTitle.value);
+            formData.append("memberName", memberName);
+            formData.append("selectedFhRelation", selectedFhRelation.value);
+            formData.append("fhName", fhName);
+            formData.append("motherName", motherName);
+            formData.append("dob", dob);
+            formData.append("age", age);
+            formData.append("panNo", panNo);
+            formData.append("aadharNo", aadharNo);
+            formData.append("phoneNumber", phoneNumber);
+            formData.append("email", email);
+            formData.append("selectedGender", selectedGender.value);
+            formData.append("selectedOccupation", selectedOccupation.value);
+            formData.append("monthlyIncome", monthlyIncome);
+            formData.append("presentAddress", presentAddress);
+            formData.append("permanentAddress", sameAsPresent ? presentAddress : permanentAddress);
+            formData.append("sameAsPresent", sameAsPresent);
+            formData.append("companyAddress", companyAddress);
+            formData.append("companyName", companyName);
+            formData.append("nomineeAge", nomineeAge);
+            formData.append("nomineeEmail", nomineeEmail);
+            formData.append("nomineeName", nomineeName);
+            formData.append("nomineePhone", nomineePhone);
+            formData.append("introducersName", introducersName);
+            formData.append("isMarried", isMarried);
+            formData.append("ownHouseProperty", ownHouseProperty);
+            formData.append("nomineeRelationship", nomineeRelationship);
+            formData.append("addressProofType", addressProofType.value);
+            formData.append("addressProof", addressProof);
+            formData.append("signatureApplicant", signatureApplicant);
+            formData.append("signatureIntroducer", signatureIntroducer);
+            formData.append("aadharCard", aadharCard);
+            formData.append("panCard", panCard);
+            formData.append("photo", photo);
+            const response = await postAPIMedia('/employee/create-member', formData);
+            toast.success(response.message);
+            navigate(`/employee/member/${response.id}`);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+            setSubmitting(false);
+        }
+    }
+
+    /**
+     * Initial data fetching function called on component mount.
+     * Calls functions to get dropdown lists.
+     */
+    const fetchData = async () => {
+        try {
+            setSender(true);
+
+            setSelectedFhRelation(fhRelation[0]);
+            setAddressProofType(addressProofDocs[0]);
+
+            // Run all API calls in parallel
+            await Promise.all([
+                getBranchList(),
+                getTitleList(),
+                getGenderList(),
+                getOccupationList()
+            ]);
+        } catch (error) {
+            setError(true);
+            console.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (selectedBranch?.value) getMembershipAmoutSet();
+    }, [selectedBranch]);
+
+    return (
+        &lt;>
+            {sender ? (
+                &lt;Loader text={submitting ? "Saving..." : "Fetching Data..."} />
+            ) : !error ? (
+                &lt;div className="flex overflow-y-auto px-12 py-10">
+                    &lt;div className="flex flex-col w-[70%]">
+                        &lt;p className="text-[24px] font-semibold">Create Members&lt;/p>
+                        &lt;hr className="border-[#55595F] border-1 mt-5" />
+                        &lt;div className="flex flex-col mt-8 text-[#1E1F26]">
+                            {/* Branch Selection */}
+                            &lt;div className="flex flex-col relative">
+                                &lt;label htmlFor="branchSelect" className="ml-1 required">Select Branch&lt;/label>
+                                &lt;Select
+                                    id="branchSelect"
+                                    options={branches}
+                                    value={selectedBranch}
+                                    onChange={setSelectedBranch}
+                                    className="mt-2"
+                                    isSearchable
+                                    placeholder="XYZ Branch"
+                                    styles={{
+                                        control: (base) => ({
+                                            ...base,
+                                            border: "1px solid #cacaca",
+                                        }),
+                                        container: (base) => ({
+                                            ...base,
+                                            width: "100%", // Make sure select takes full width
+                                        }),
+                                        input: (input) => ({
+                                            ...input,
+                                            padding: "5px 10px",
+                                        }),
+                                        singleValue: (singleValue) => ({
+                                            ...singleValue,
+                                            padding: "5px 10px"
+                                        }),
+                                        placeholder: (placeholder) => ({
+                                            ...placeholder,
+                                            padding: "5px 10px"
+                                        })
+                                    }}
+                                />
+                            &lt;/div>
+
+                            {/* Member Name */}
+                            &lt;div className="flex flex-col mt-8 relative">
+                                &lt;label htmlFor="memberName" className="ml-1 required">Member's Full Name&lt;/label>
+                                &lt;div className="flex gap-x-5">
+                                    &lt;Select
+                                        options={titles}
+                                        value={selectedTitle}
+                                        onChange={setSelectedTitle}
+                                        className="mt-2 w-[20%]"
+                                        placeholder="Title"
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                border: "1px solid #cacaca",
+                                            }),
+                                            container: (base) => ({
+                                                ...base,
+                                                width: "20%", // Make sure select takes full width
+                                            }),
+                                            input: (input) => ({
+                                                ...input,
+                                                padding: "5px 10px",
+                                            }),
+                                            singleValue: (singleValue) => ({
+                                                ...singleValue,
+                                                padding: "5px 10px"
+                                            }),
+                                            placeholder: (placeholder) => ({
+                                                ...placeholder,
+                                                padding: "5px 10px"
+                                            })
+                                        }}
+                                    />
+                                    &lt;input
+                                        maxLength="255"
+                                        disabled={sender}
+                                        id="memberName"
+                                        className="form-input mt-2 flex-1"
+                                        placeholder="John Doe"
+                                        value={memberName}
+                                        onChange={(e) => setMemberName(e.target.value)}
+                                        required
+                                    />
+                                &lt;/div>
+                            &lt;/div>
+                            {/* Father's / Husband's Name */}
+                            &lt;div className="flex flex-col mt-8 relative">
+                                &lt;label htmlFor="fhName" className="ml-1 required">Father's / Husband's Name&lt;/label>
+                                &lt;div className="flex gap-x-5">
+                                    &lt;Select
+                                        options={fhRelation}
+                                        value={selectedFhRelation}
+                                        onChange={setSelectedFhRelation}
+                                        className="mt-2 w-[20%]"
+                                        placeholder="Relation"
+                                        styles={{
+                                            control: (base) => ({
+                                                ...base,
+                                                border: "1px solid #cacaca",
+                                            }),
+                                            container: (base) => ({
+                                                ...base,
+                                                width: "20%", // Make sure select takes full width
+                                            }),
+                                            input: (input) => ({
+                                                ...input,
+                                                padding: "5px 10px",
+                                            }),
+                                            singleValue: (singleValue) => ({
+                                                ...singleValue,
+                                                padding: "5px 10px"
+                                            }),
+                                            placeholder: (placeholder) => ({
+                                                ...placeholder,
+                                                padding: "5px 10px"
+                                            })
+                                        }}
+                                    />
+                                    &lt;input
+                                        maxLength="255"
+                                        disabled={sender}
+                                        id="fhName"
+                                        className="form-input mt-2 flex-1"
+                                        placeholder="John Doe"
+                                        value={fhName}
+                                        onChange={(e) => setFhName(e.target.value)}
+                                        required
+                                    />
+                                &lt;/div>
+                            &lt;/div>
+                            {/* Mother's Name */}
+                            &lt;div className="flex flex-col mt-8 relative">
+                                &lt;label htmlFor="motherName" className="ml-1 required">Mother's Name&lt;/label>
+                                &lt;div className="flex gap-x-5">
+                                    &lt;input
+                                        maxLength="255"
+                                        disabled={sender}
+                                        id="motherName"
+                                        className="form-input mt-2 flex-1"
+                                        placeholder="John Doe"
+                                        value={motherName}
+                                        onChange={(e) => setMotherName(e.target.value)}
+                                        required
+                                    />
+                                &lt;/div>
+                            &lt;/div>
+                            {/* DOB, Age, Own House Property and Marital Status */}
+                            &lt;div className="flex justify-between">
+                                &lt;div className="flex gap-x-5">
+                                    &lt;div className="flex flex-col mt-8 relative">
+                                        &lt;label htmlFor="dob" className="ml-1 required">Date of birth&lt;/label>
+                                        &lt;div className="flex gap-x-5">
+                                            &lt;input
+                                                disabled={sender}
+                                                type="date"
+                                                id="dob"
+                                                className="form-input mt-2 flex-1"
+                                                value={dob}
+                                                onChange={(e) => dobChange(e.target.value)}
+                                                required
+                                            />
+                                        &lt;/div>
+                                    &lt;/div>
+                                    &lt;div className="flex flex-col mt-8 relative">
+                                        &lt;label htmlFor="age" className="ml-1 text-center">Age&lt;/label>
+                                        &lt;div className="flex gap-x-5">
+                                            &lt;input
+                                                disabled={true}
+                                                id="age"
+                                                className="form-input text-center w-[100px] mt-2 flex-1"
+                                                placeholder="XX"
+                                                value={age}
+                                                required
+                                            />
+                                        &lt;/div>
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex gap-x-20">
+                                    &lt;div className="flex flex-col mt-8 relative">
+                                        &lt;label htmlFor="ohp" className="ml-1 required">Own House Property&lt;/label>
+                                        &lt;div className="flex h-full items-center gap-x-5">
+                                            &lt;ToggleButton 
+                                                defaultChecked={ownHouseProperty}
+                                                onChange={setOwnHouseProperty}
+                                            />
+                                            &lt;p>{ownHouseProperty ? "YES" : "NO"}&lt;/p>
+                                        &lt;/div>
+                                    &lt;/div>
+                                    &lt;div className="flex flex-col min-w-[140px] mt-8 relative">
+                                        &lt;label htmlFor="maritalStatus" className="ml-1 required">Marital Status&lt;/label>
+                                        &lt;div className="flex h-full items-center gap-x-5">
+                                            &lt;ToggleButton 
+                                                defaultChecked={isMarried}
+                                                onChange={setIsMarried}
+                                            />
+                                            &lt;p>{isMarried ? "Married" : "Single"}&lt;/p>
+                                        &lt;/div>
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="panNo" className="ml-1 required">PAN No.&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="10"
+                                            id="panNo"
+                                            className="form-input max-w-[200px] mt-2 flex-1"
+                                            placeholder="XXXXXXXXXX"
+                                            value={panNo}
+                                            onChange={(e) => handlePanNoChange(e.target.value)}
+                                            required
+                                        />
+                                        {panNo.length ? &lt;span className="absolute bottom-3 right-4">{correctPanNo ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="aadharNo" className="ml-1 required">Aadhar No.&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="12"
+                                            id="aadharNo"
+                                            className="form-input max-w-[200px] mt-2 flex-1"
+                                            placeholder="XXXXXXXXXXXX"
+                                            value={aadharNo}
+                                            onChange={(e) => handleAadharNoChange(e.target.value)}
+                                            required
+                                        />
+                                        {aadharNo.length ? &lt;span className="absolute bottom-3 right-4">{correctAadharNo ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="phoneNumber" className="ml-1 required">Phone No.&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="20"
+                                            id="phoneNumber"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="+91 XXXXXXXXXX (with country code)"
+                                            value={phoneNumber}
+                                            onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                                            required
+                                        />
+                                        {phoneNumber.length ? &lt;span className="absolute bottom-3 right-4">{correctPhoneNumber ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="gender" className="ml-1 required">Gender&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;Select
+                                            options={genderList}
+                                            value={selectedGender}
+                                            onChange={setSelectedGender}
+                                            className="mt-2"
+                                            placeholder="Gender"
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    border: "1px solid #cacaca",
+                                                }),
+                                                container: (base) => ({
+                                                    ...base,
+                                                }),
+                                                input: (input) => ({
+                                                    ...input,
+                                                    padding: "5px 10px",
+                                                }),
+                                                singleValue: (singleValue) => ({
+                                                    ...singleValue,
+                                                    padding: "5px 10px"
+                                                }),
+                                                placeholder: (placeholder) => ({
+                                                    ...placeholder,
+                                                    padding: "5px 10px"
+                                                })
+                                            }}
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col w-[250px] mt-8 relative">
+                                    &lt;label htmlFor="occupation" className="ml-1 required">Occupation&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;Select
+                                            options={occupationList}
+                                            value={selectedOccupation}
+                                            onChange={setSelectedOccupation}
+                                            className="mt-2"
+                                            placeholder="Occupation"
+                                            styles={{
+                                                control: (base) => ({
+                                                    ...base,
+                                                    border: "1px solid #cacaca",
+                                                }),
+                                                container: (base) => ({
+                                                    ...base,
+                                                    width: "100%"
+                                                }),
+                                                input: (input) => ({
+                                                    ...input,
+                                                    padding: "5px 10px",
+                                                }),
+                                                singleValue: (singleValue) => ({
+                                                    ...singleValue,
+                                                    padding: "5px 10px"
+                                                }),
+                                                placeholder: (placeholder) => ({
+                                                    ...placeholder,
+                                                    padding: "5px 10px"
+                                                })
+                                            }}
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="monthlyIncome" className="ml-1 required">Monthly Income&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;CurrencyInput
+                                            id="monthlyIncome"
+                                            allowDecimals={true}
+                                            allowNegativeValue={false}
+                                            maxLength="255"
+                                            decimalsLimit={2}
+                                            disabled={sender}
+                                            placeholder="Income"
+                                            defaultValue={formattedMonthlyIncome || monthlyIncome}
+                                            intlConfig={{ locale: 'en-IN', currency: 'INR' }}
+                                            prefix={`${import.meta.env.VITE_CURRENCY_SYMBOL} `}
+                                            disableAbbreviations={true}
+                                            className="form-input mt-2 flex-1"
+                                            onValueChange={(_, __, values) => {
+                                                setFormattedMonthlyIncome(values.formatted);
+                                                setMonthlyIncome(values.value);
+                                            }}
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col w-1/2 mt-8 relative">
+                                    &lt;label htmlFor="presentAddress" className="ml-1 required">Present Address&lt;/label>
+                                    &lt;div className="flex">
+                                        &lt;textarea
+                                            disabled={sender}
+                                            maxLength="300"
+                                            id="presentAddress"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="123, Santa Monica, ..."
+                                            value={presentAddress}
+                                            onChange={(e) => setPresentAddress(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col w-1/2 mt-8 relative">
+                                    &lt;div className="flex justify-between">
+                                        &lt;label htmlFor="permanentAddress" className="ml-1 required">Permanent Address&lt;/label>
+                                        &lt;div className="flex relative">
+                                            &lt;div className="flex h-full items-center gap-x-2">
+                                                &lt;input id="sameAsPresent" type="checkbox" checked={sameAsPresent} onChange={(e) => setSameAsPresent(e.target.checked)} />
+                                                &lt;label htmlFor="sameAsPresent">Same as present?&lt;/label>
+                                            &lt;/div>
+                                        &lt;/div>
+                                    &lt;/div>
+                                    &lt;div className="flex">
+                                        &lt;textarea
+                                            disabled={sender || sameAsPresent}
+                                            maxLength="300"
+                                            id="permanentAddress"
+                                            className={`form-input mt-2 flex-1 !ease-in ${sameAsPresent ? 'bg-gray-200' : ''}`}
+                                            placeholder="123, Santa Monica, ..."
+                                            value={sameAsPresent ? presentAddress : permanentAddress}
+                                            onChange={(e) => sameAsPresent ? null : setPermanentAddress(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="email" className="ml-1 required">Email&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="320"
+                                            id="email"
+                                            className="form-input max-w-[250px] mt-2 flex-1"
+                                            placeholder="example@xyz.com"
+                                            value={email}
+                                            onChange={(e) => handleEmailChange(e.target.value)}
+                                            required
+                                        />
+                                        {email.length ? &lt;span className="absolute top-0 bg-white right-2">{correctEmail ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="companyName" className="ml-1 required">Company Name&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="255"
+                                            id="companyName"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="XYZ Pvt. Ltd."
+                                            value={companyName}
+                                            onChange={(e) => setCompanyName(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="companyAddress" className="ml-1 required">Company Address&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="300"
+                                            id="companyAddress"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="123, Santa Monica, ..."
+                                            value={companyAddress}
+                                            onChange={(e) => setCompanyAddress(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex flex-col mt-8">
+                                &lt;p className="text-[24px] font-semibold">Nominee Details&lt;/p>
+                                &lt;hr className="border-[#55595F] border-1 mt-5" />
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="nomineeName" className="ml-1 required">Nominee Name&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="255"
+                                            id="nomineeName"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="John Doe"
+                                            value={nomineeName}
+                                            onChange={(e) => setNomineeName(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="nomineeRelationship" className="ml-1 required">Relationship with member&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="255"
+                                            id="nomineeRelationship"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="Relationship"
+                                            value={nomineeRelationship}
+                                            onChange={(e) => setNomineeRelationship(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col items-center mt-8 relative">
+                                    &lt;label htmlFor="nomineeAge" className="ml-1 required">Age of Nominee&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="3"
+                                            id="nomineeAge"
+                                            className="form-input text-center max-w-[100px] mt-2 flex-1"
+                                            placeholder="Years"
+                                            value={nomineeAge}
+                                            onChange={(e) => setNomineeAge(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col mt-8 relative">
+                                    &lt;label htmlFor="introducersName" className="ml-1 required">Introdcer's Full Name&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="255"
+                                            id="introducersName"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="John Doe"
+                                            value={introducersName}
+                                            onChange={(e) => setIntroducersName(e.target.value)}
+                                            required
+                                        />
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="nomineePhone" className="ml-1 required">Nominee Phone No.&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="20"
+                                            id="nomineePhone"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="+91 XXXXXXXXXX (with country code)"
+                                            value={nomineePhone}
+                                            onChange={(e) => handleNomineePhoneNumberChange(e.target.value)}
+                                            required
+                                        />
+                                        {nomineePhone.length ? &lt;span className="absolute top-0 bg-white right-2">{correctNomineePhone ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                                &lt;div className="flex flex-col grow mt-8 relative">
+                                    &lt;label htmlFor="nomineeEmail" className="ml-1 required">Nominee Email&lt;/label>
+                                    &lt;div className="flex gap-x-5">
+                                        &lt;input
+                                            disabled={sender}
+                                            maxLength="320"
+                                            id="nomineeEmail"
+                                            className="form-input mt-2 flex-1"
+                                            placeholder="example@xyz.com"
+                                            value={nomineeEmail}
+                                            onChange={(e) => handleNomineeEmailChange(e.target.value)}
+                                            required
+                                        />
+                                        {nomineeEmail.length ? &lt;span className="absolute top-0 bg-white right-2">{correctNomineeEmail ? &lt;MdOutlineDone className="text-[20px] text-green-400" /> : &lt;IoCloseOutline className="text-[20px] text-red-400" />}&lt;/span> : null}
+                                    &lt;/div>
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="flex gap-x-5">
+                                &lt;div className="flex flex-col w-full  mt-8 justify-center items-center gap-4">
+                                    &lt;p className="required">Signature of Applicant&lt;/p>
+                                    &lt;div className="relative w-[70%] aspect-video border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                        {signatureApplicantPreview ? (
+                                            &lt;img
+                                                src={signatureApplicantPreview}
+                                                alt="Signature Applicant Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            &lt;p className="text-gray-500 text-center">Signature Applicant&lt;br/>MAX: {import.meta.env.VITE_PHOTO_SIZE_LIMIT}MB&lt;/p>
+                                        )}
+                                    &lt;/div>
+
+                                    &lt;input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handlePhotoUpload(e.target.files[0], setSignatureApplicant, setSignatureApplicantPreview)}
+                                        className="hidden"
+                                        id="signatureApplicant"
+                                    />
+                                    &lt;label htmlFor="signatureApplicant" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                        Choose Photo
+                                    &lt;/label>
+                                    {signatureApplicant &amp;&amp; (
+                                        &lt;button
+                                            className="text-red-500 cursor-pointer"
+                                            onClick={() => {
+                                                setSignatureApplicant(null);
+                                                setSignatureApplicantPreview(null);
+                                            }}
+                                        >
+                                            Remove Photo
+                                        &lt;/button>
+                                    )}
+                                &lt;/div>
+                                &lt;div className="flex flex-col w-full mt-8 justify-center items-center gap-4">
+                                    &lt;p className="required">Signature of Introducer&lt;/p>
+                                    &lt;div className="relative w-[70%] aspect-video border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                        {signatureIntroducerPreview ? (
+                                            &lt;img
+                                                src={signatureIntroducerPreview}
+                                                alt="Signature Introducer Preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            &lt;p className="text-gray-500 text-center">Signature Introducer&lt;br/>MAX: {import.meta.env.VITE_PHOTO_SIZE_LIMIT}MB&lt;/p>
+                                        )}
+                                    &lt;/div>
+
+                                    &lt;input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handlePhotoUpload(e.target.files[0], setSignatureIntroducer, setSignatureIntroducerPreview)}
+                                        className="hidden"
+                                        id="signatureIntroducer"
+                                    />
+                                    &lt;label htmlFor="signatureIntroducer" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                        Choose Photo
+                                    &lt;/label>
+                                    {signatureIntroducer &amp;&amp; (
+                                        &lt;button
+                                            className="text-red-500 cursor-pointer"
+                                            onClick={() => {
+                                                setSignatureIntroducer(null);
+                                                setSignatureIntroducerPreview(null);
+                                            }}
+                                        >
+                                            Remove Photo
+                                        &lt;/button>
+                                    )}
+                                &lt;/div>
+                            &lt;/div>
+                            &lt;div className="my-8 flex justify-end gap-x-2 items-center">
+                                &lt;p className="text-red-500">*&lt;/p>
+                                &lt;p>required&lt;/p>
+                            &lt;/div>
+                            &lt;CustomButton sender={sender} disabledCond={!selectedBranch || !selectedTitle || !memberName || !selectedFhRelation || !fhName || !motherName || !dob || !age || !panNo || !aadharNo || !phoneNumber || !email || !selectedGender || !selectedOccupation || !monthlyIncome || !presentAddress || !companyAddress || !companyName || !nomineeAge || !nomineeEmail || !nomineeName || !nomineePhone || !nomineeRelationship || !introducersName || !photo || !signatureApplicant || !signatureIntroducer || !addressProofType || !addressProof || !aadharCard || !panCard} text={"Create Member"} classes={"mb-8"} cb={() => handleSubmit()} />
+                        &lt;/div>
+                    &lt;/div>
+
+                    {/* 3:4 Photo Uploader */}
+                    &lt;div className="flex-1 mt-22 pl-10 flex flex-col items-end">
+                        &lt;div className="flex flex-col w-full justify-center items-center gap-4">
+                            &lt;p className="required">Upload Profile Photo&lt;/p>
+                            &lt;div className="relative w-[70%] aspect-[3/4] border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                {photoPreview ? (
+                                    &lt;img
+                                        src={photoPreview}
+                                        alt="Profile Preview"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    &lt;p className="text-gray-500 text-center">Profile Photo&lt;br/>MAX: {import.meta.env.VITE_PHOTO_SIZE_LIMIT}MB&lt;/p>
+                                )}
+                            &lt;/div>
+
+                            &lt;input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => handlePhotoUpload(e.target.files[0], setPhoto, setPhotoPreview)}
+                                className="hidden"
+                                id="photoUpload"
+                            />
+                            &lt;label htmlFor="photoUpload" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                Choose Photo
+                            &lt;/label>
+                            {photo &amp;&amp; (
+                                &lt;button
+                                    className="text-red-500 cursor-pointer"
+                                    onClick={() => {
+                                        setPhoto(null);
+                                        setPhotoPreview(null);
+                                    }}
+                                >
+                                    Remove Photo
+                                &lt;/button>
+                            )}
+                        &lt;/div>
+                        &lt;div className="flex flex-col w-full mt-8 justify-center items-center gap-4">
+                            &lt;p className="required">Upload Address Proof&lt;/p>
+                            &lt;div className="w-[70%]">
+                                &lt;Select
+                                    options={addressProofDocs}
+                                    value={addressProofType}
+                                    onChange={setAddressProofType}
+                                    className="mt-2"
+                                    placeholder="Address Proof Type"
+                                    styles={{
+                                        control: (base) => ({
+                                            ...base,
+                                            border: "1px solid #cacaca",
+                                        }),
+                                        container: (base) => ({
+                                            ...base,
+                                            width: "100%"
+                                        }),
+                                        input: (input) => ({
+                                            ...input,
+                                            padding: "5px 10px",
+                                        }),
+                                        singleValue: (singleValue) => ({
+                                            ...singleValue,
+                                            padding: "5px 10px",
+                                        }),
+                                        placeholder: (placeholder) => ({
+                                            ...placeholder,
+                                            padding: "5px 10px"
+                                        }),
+                                    }}
+                                />
+                            &lt;/div>
+                            &lt;div className="relative w-[70%] min-h-[70px] border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                {addressProof ? &lt;p className="text-gray-500 py-2 text-center">{addressProof.name}&lt;/p>  : &lt;p className="text-gray-500 py-2 text-center">Address Proof&lt;br/>(Only PDF)&lt;br/>MAX: {import.meta.env.VITE_PDF_SIZE_LIMIT}MB&lt;/p>}
+                            &lt;/div>
+
+                            &lt;input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) => handlePDFUpload(e.target.files[0], setAddressProof)}
+                                className="hidden"
+                                id="addressProof"
+                            />
+                            &lt;label htmlFor="addressProof" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                Choose PDF
+                            &lt;/label>
+                            {addressProof &amp;&amp; (
+                                &lt;button
+                                    className="text-red-500 cursor-pointer"
+                                    onClick={() => {
+                                        setAddressProof(null);
+                                    }}
+                                >
+                                    Remove PDF
+                                &lt;/button>
+                            )}
+                        &lt;/div>
+                        &lt;div className="flex flex-col w-full mt-8 justify-center items-center gap-4">
+                            &lt;p className="required">Upload Aaadhar Card&lt;/p>
+                            &lt;div className="relative w-[70%] min-h-[70px] border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                {aadharCard ? &lt;p className="text-gray-500 py-2 text-center">{aadharCard.name}&lt;/p>  : &lt;p className="text-gray-500 py-2 text-center">Aadhar Card&lt;br/>(Only PDF)&lt;br/>MAX: {import.meta.env.VITE_PDF_SIZE_LIMIT}MB&lt;/p>}
+                            &lt;/div>
+
+                            &lt;input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) => handlePDFUpload(e.target.files[0], setAadharCard)}
+                                className="hidden"
+                                id="aadharCard"
+                            />
+                            &lt;label htmlFor="aadharCard" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                Choose PDF
+                            &lt;/label>
+                            {aadharCard &amp;&amp; (
+                                &lt;button
+                                    className="text-red-500 cursor-pointer"
+                                    onClick={() => {
+                                        setAadharCard(null);
+                                    }}
+                                >
+                                    Remove PDF
+                                &lt;/button>
+                            )}
+                        &lt;/div>
+                        &lt;div className="flex flex-col w-full mt-8 justify-center items-center gap-4">
+                            &lt;p className="required">Upload PAN Card&lt;/p>
+                            &lt;div className="relative w-[70%] min-h-[70px] border-2 border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-100">
+                                {panCard ? &lt;p className="text-gray-500 py-2 text-center">{panCard.name}&lt;/p>  : &lt;p className="text-gray-500 py-2 text-center">PAN Card&lt;br/>(Only PDF)&lt;br/>MAX: {import.meta.env.VITE_PDF_SIZE_LIMIT}MB&lt;/p>}
+                            &lt;/div>
+
+                            &lt;input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={(e) => handlePDFUpload(e.target.files[0], setPanCard)}
+                                className="hidden"
+                                id="panCard"
+                            />
+                            &lt;label htmlFor="panCard" className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md">
+                                Choose PDF
+                            &lt;/label>
+                            {panCard &amp;&amp; (
+                                &lt;button
+                                    className="text-red-500 cursor-pointer"
+                                    onClick={() => {
+                                        setPanCard(null);
+                                    }}
+                                >
+                                    Remove PDF
+                                &lt;/button>
+                            )}
+                        &lt;/div>
+                        &lt;div className="flex flex-col w-full mt-16 pb-16 justify-center items-center gap-4">
+                            &lt;p className="font-semibold text-center">Amount Payable&lt;br/>(New Membership)&lt;/p>
+                            &lt;hr className="border-[#55595F] border-1 w-[70%]" />
+                            {membershipAmountSet.map((amountset, index) => (
+                                &lt;div key={"amountset-" + index} className="flex w-[70%] justify-between">
+                                    &lt;p>{amountset.name}:&lt;/p>
+                                    &lt;p className="font-bold">{import.meta.env.VITE_CURRENCY_SYMBOL} {amountset.value}{amountset.refundable ? "(R)" : ""}&lt;/p>
+                                &lt;/div>
+                            ))}
+                            &lt;hr className="border-[#55595F] border-1 w-[70%]" />
+                            &lt;div className="flex w-[70%] justify-between">
+                                &lt;p>Total Amt:&lt;/p>
+                                &lt;p className="font-bold">{import.meta.env.VITE_CURRENCY_SYMBOL} {totalAmount}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex w-[70%] justify-between">
+                                &lt;p>Refundable Amt:&lt;/p>
+                                &lt;p className="font-bold">{import.meta.env.VITE_CURRENCY_SYMBOL} {totalRefundableAmount}&lt;/p>
+                            &lt;/div>
+                            &lt;p className="italic">(R) - Refundable&lt;/p>
+                        &lt;/div>
+                    &lt;/div>
+                &lt;/div>
+            ) : (
+                &lt;NotFound text={"Error collecting data! Please contact IT administrator..."} />
+            )}
+        &lt;/>
+    );
+};
+
+export default CreateMembers;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

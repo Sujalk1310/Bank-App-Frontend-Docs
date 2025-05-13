@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Admin/Sidepanel.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Admin/Sidepanel.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { GrUserSettings } from "react-icons/gr";
+import { LuUsersRound } from "react-icons/lu";
+import { MdSpaceDashboard } from "react-icons/md";
+import { IoPersonAdd } from "react-icons/io5";
+import { MdLogout } from "react-icons/md";
+import { FaThList } from "react-icons/fa";
+import SidepanelButton from '../SidepanelButton';    
+import { useNavigate } from "react-router-dom";
+import { useContext, useState } from "react";
+import FullPageLoader from '../FullPageLoader';
+import toast from "react-hot-toast";
+import { postAPI } from "../../caller/axiosUrls";
+import { AdminContext } from "../../contexts/AdminToken";
+
+/**
+ * The side panel navigation component for the Admin section.
+ * Displays navigation links (including nested submenus) for Dashboard, Users, Schemes, Settings.
+ * Also includes company branding and a logout button.
+ * 
+ * Uses `SidepanelButton` for individual navigation items.
+ * Handles navigation using `react-router-dom`'s `useNavigate` hook.
+ * Manages logout functionality, clearing tokens and redirecting.
+ * 
+ * @returns {JSX.Element} The admin side panel component.
+ */
+const Sidepanel = () => {
+    const [sender, setSender] = useState(false);
+
+    const { setAdToken } = useContext(AdminContext);
+    
+    const navigate = useNavigate();
+
+    /**
+     * Handles the admin logout process.
+     * Calls the logout API endpoint, clears session storage and context state,
+     * displays success/error toasts, and navigates to the admin login page.
+     */
+    const logout = async () => {
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI('/admin/logout');
+            toast.success(response.message);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            sessionStorage.removeItem("ad-token");
+            sessionStorage.removeItem("admin-id");
+            setAdToken(null);
+            setSender(false);
+            navigate('/login/admin');
+        }
+    }
+
+    return (
+        &lt;>
+            {sender &amp;&amp; &lt;FullPageLoader />}
+            &lt;div className="bg-[#F8F9FA] py-10 flex flex-col min-w-[280px]">
+                &lt;p className="ml-10 text-[24px] text-[#1E1F26]">{import.meta.env.VITE_COMPANY_NAME}&lt;/p>
+                &lt;p className="ml-10 text-[#1E1F26]">{import.meta.env.VITE_COMPANY_TAG}&lt;/p>
+                &lt;div className="flex-1 mt-10 mb-5 overflow-y-auto">
+                    &lt;SidepanelButton sender={sender} text={"Dashboard"} icon={&lt;MdSpaceDashboard />} activePathname={'/admin/dashboard'} cb={() => navigate('/admin/dashboard')} />
+                    &lt;SidepanelButton sender={sender} text={"Users"} icon={&lt;LuUsersRound />} activePathname={'/admin/users'} submenuList={[
+                            { text: "Add User", icon: &lt;IoPersonAdd />, activePathname: "/admin/users/add", cb: () => navigate('/admin/users/add') },
+                            { text: "All Users", icon: &lt;LuUsersRound />, activePathname: "/admin/users/all", cb: () => navigate('/admin/users/all') },
+                        ]}
+                    />
+                    &lt;SidepanelButton sender={sender} text={"Schemes"} icon={&lt;FaThList />} activePathname={'/admin/schemes'} cb={() => navigate('/admin/schemes')} />
+                &lt;/div>
+                &lt;div className="flex flex-col w-full">
+                    &lt;SidepanelButton sender={sender} text={"Settings"} icon={&lt;GrUserSettings />} activePathname={'/admin/settings'} cb={() => navigate('/admin/settings')} />
+                    &lt;SidepanelButton sender={sender} text={"Log out"} icon={&lt;MdLogout />} cb={logout} />
+                &lt;/div>
+            &lt;/div>
+        &lt;/>
+    )
+}
+
+export default Sidepanel;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

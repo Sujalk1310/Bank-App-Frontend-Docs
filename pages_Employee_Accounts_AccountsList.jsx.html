@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/Accounts/AccountsList.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/Accounts/AccountsList.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useEffect } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import NotFound from "../../../components/NotFound";
+import { getAPI } from "../../../caller/axiosUrls";
+import toast from "react-hot-toast";
+import { IoOpenOutline } from "react-icons/io5";
+import Skeleton from 'react-loading-skeleton'
+import 'react-loading-skeleton/dist/skeleton.css'
+
+/**
+ * Accounts List component (Employee view).
+ * Displays a list of accounts belonging to a specific member, identified by the `mid` route parameter.
+ * Fetches accounts from the `/employee/accounts/:mid` API endpoint.
+ * If the navigation state includes `withdraw: true`, it filters the list to show only OD accounts.
+ * Clicking an account navigates to:
+ *  - Deposit page (`/employee/transactions/deposit/:accountNumber`) if `deposit: true` in state.
+ *  - Withdraw page (`/employee/transactions/withdraw/:accountNumber`) if `withdraw: true` in state.
+ *  - Account Info page (`/employee/accounts/:accountNumber`) otherwise.
+ * 
+ * @returns {JSX.Element} The member's accounts list component.
+ */
+const AccountsList = () => {
+    const [sender, setSender] = useState(true);
+    const [accountsList, setAccountsList] = useState([]);
+
+    const navigate = useNavigate();
+    const { mid } = useParams();
+    const location = useLocation();
+
+    /**
+     * Fetches the list of accounts for the specified member (`mid`).
+     * Filters for OD accounts if `location.state.withdraw` is true.
+     * Updates `accountsList` state. Shows skeleton loaders during fetch.
+     */
+    const getMemberAccounts = async (query) => {
+        setSender(true);
+
+        try {
+            const response = await getAPI(`/employee/accounts/${mid}`);
+            let accounts = response.accounts;
+            if (location.state?.withdraw) accounts = accounts.filter(account => account.accountType === "od");
+            setAccountsList(accounts);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    };
+
+    useEffect(() => {
+        getMemberAccounts();
+    }, []);
+
+    return (
+        &lt;div className="flex flex-col w-[70%] px-12 py-10">
+            &lt;p className="text-[24px] font-semibold flex justify-between">Accounts List &lt;span>({mid})&lt;/span>&lt;/p>
+            &lt;hr className="border-[#55595F] border-1 mt-5" />
+            &lt;div className="flex flex-col text-[#1E1F26]">
+                &lt;div className="flex mt-8 bg-white px-[20px] py-[10px] border rounded-xl shadow-lg justify-between items-center w-full">
+                    &lt;div className="flex">
+                        &lt;p className="font-semibold w-[200px]">Account No.&lt;/p>
+                        &lt;p className="font-semibold w-[150px] truncate">Type&lt;/p>
+                        &lt;p className="font-semibold w-[150px] truncate">Status&lt;/p>
+                        &lt;p className="font-semibold w-[150px] truncate">Started At&lt;/p>
+                    &lt;/div>
+                    &lt;div className="flex w-[80px]">
+                        &lt;p className="font-semibold">Overview&lt;/p>
+                    &lt;/div>
+                &lt;/div>
+                {sender ? 
+                &lt;div className="mt-2">
+                    &lt;Skeleton className="mt-3" height={40} width="100%" />
+                    &lt;Skeleton className="mt-3" height={40} width="100%" />
+                    &lt;Skeleton className="mt-3" height={40} width="100%" />
+                    &lt;Skeleton className="mt-3" height={40} width="100%" />
+                    &lt;Skeleton className="mt-3" height={40} width="100%" />
+                &lt;/div> :
+                accountsList.length > 0 ?
+                    accountsList.map((account, index) => (
+                        &lt;div key={"account-" + index} onClick={() => navigate(location.state?.deposit ? `/employee/transactions/deposit/${account?.accountNumber}` : location.state?.withdraw ? `/employee/transactions/withdraw/${account?.accountNumber}` : `/employee/accounts/${account?.accountNumber}`)} className="flex cursor-pointer hover:shadow-lg hover:scale-[1.01] mt-3 bg-white px-[20px] py-[10px] border rounded-xl justify-between items-center w-full">
+                            &lt;div className="flex">
+                                &lt;p className="w-[200px]">{account?.accountNumber}&lt;/p>
+                                &lt;p className="w-[150px] truncate uppercase">{account?.accountType}&lt;/p>
+                                &lt;p className="w-[150px] truncate capitalize">{account?.status}&lt;/p>
+                                &lt;p className="w-[150px] truncate">{account?.startDate ? new Date(account.startDate).toISOString().split("T")[0] : null}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex w-[50px] justify-center">
+                                &lt;IoOpenOutline />
+                            &lt;/div>
+                        &lt;/div>
+                    ))
+                : &lt;NotFound classes={"mt-20"} text={"No Accounts Found!"} />}
+            &lt;/div>
+        &lt;/div>
+    )
+}
+
+export default AccountsList;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

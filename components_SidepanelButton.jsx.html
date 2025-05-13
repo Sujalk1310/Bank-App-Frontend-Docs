@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/SidepanelButton.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/SidepanelButton.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useLocation } from "react-router-dom";
+import { IoIosArrowDown } from "react-icons/io";
+import { MdOutlineKeyboardDoubleArrowRight } from "react-icons/md";
+import { useEffect, useState } from "react";
+
+/**
+ * A button component for side panels, with support for nested submenus.
+ * Highlights itself if the current route matches its `activePathname`.
+ * Can expand to show submenus if `submenuList` is provided.
+ * 
+ * @param {object} props - The component props.
+ * @param {boolean} [props.sender=false] - If true, the button is in a sending/loading state and disabled.
+ * @param {boolean} [props.disabledCond=false] - Additional condition to disable the button.
+ * @param {boolean} [props.isSubmenu=false] - If true, renders as a submenu item (e.g., with an arrow icon).
+ * @param {string} props.text - The text label for the button.
+ * @param {JSX.Element} props.icon - The icon element to display on the button.
+ * @param {string} props.activePathname - The pathname that should make this button appear active.
+ * @param {function} [props.cb] - Callback function to execute on click if not a submenu parent.
+ * @param {Array&lt;object>} [props.submenuList] - An array of submenu item configurations. Each item is an object with props for another `SidepanelButton`.
+ * @returns {JSX.Element} The side panel button component, potentially with a collapsible submenu.
+ */
+const SidepanelButton = ({ sender, disabledCond, isSubmenu, text, icon, activePathname, cb, submenuList }) => {
+    const [isOpened, setIsOpened] = useState(false);
+    
+    const location = useLocation();
+
+    /**
+     * Handles the click event on the button.
+     * If it has a submenu, it toggles the submenu's open state.
+     * Otherwise, if a callback `cb` is provided, it executes it.
+     */
+    const handleClick = () => {
+        if (submenuList) {
+            setIsOpened((prev) => !prev);
+        } else if (cb) {
+            cb(); 
+        }
+    };
+
+    useEffect(() => {
+        if (location.pathname.startsWith(activePathname)) setIsOpened(true);    
+    }, [location.pathname])
+
+    return (
+        &lt;>
+            &lt;button disabled={sender || disabledCond} onClick={handleClick} className={`flex relative cursor-pointer border-l-[3px] min-w-full min-h-[45px] ${(submenuList ? (location.pathname.startsWith(activePathname)) : (location.pathname === activePathname)) ? 'border-[#1E1F26] text-[#1E1F26] bg-gray-200' : 'border-transparent text-[#55595F]'} hover:bg-gray-200 !ease-in-out text-[18px] items-center gap-x-5 pl-10`}>
+                {isSubmenu &amp;&amp; &lt;MdOutlineKeyboardDoubleArrowRight />}
+                {icon}
+                {text}
+                {submenuList &amp;&amp; &lt;IoIosArrowDown className={`${isOpened ? 'rotate-180' : 'rotate-0'} absolute top-1/2 right-9 -translate-y-1/2`} />}
+            &lt;/button>
+           {submenuList &amp;&amp; 
+           &lt;div className={`${isOpened ? 'max-h-[500px]' : 'max-h-0'} !ease-[cubic-bezier(0.645,0.045,0.355,1)] flex overflow-hidden flex-col`}>
+                {submenuList.map((submenu, index) => (
+                    &lt;SidepanelButton isSubmenu={true} key={text + "-submenu-" + index} text={submenu.text} icon={submenu.icon} activePathname={submenu.activePathname} cb={submenu.cb} submenuList={submenu.submenuList} />
+                ))}
+            &lt;/div>}
+        &lt;/>
+    )
+}
+
+export default SidepanelButton;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

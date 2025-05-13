@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Employee/Accounts/AccountInfo.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Employee/Accounts/AccountInfo.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useEffect, useState } from "react";
+import Loader from "../../../components/Loader";
+import toast from "react-hot-toast";
+import { getAPI, postAPI } from "../../../caller/axiosUrls";
+import { IoClose, IoOpenOutline } from "react-icons/io5";
+import { useNavigate, useParams } from "react-router-dom";
+import NotFound from '../../../components/NotFound';
+import CustomButton from "../../../components/CustomButton";
+
+/**
+ * Account Information page component (Employee view).
+ * Displays detailed information for a specific account, identified by `aid` from the route parameters.
+ * Fetches account details, transactions, and current balance from the API.
+ * 
+ * Features:
+ * - Displays account number, type, status, and balance.
+ * - Shows linked customer profile (navigates to member profile on click).
+ * - Displays plan details (start/end dates, ROI, tenure, initial deposit).
+ * - Lists all transactions for the account.
+ * - Provides a "Withdraw Account" button:
+ *   - For OD accounts, directly proceeds with a confirmation step.
+ *   - For RD/FD accounts, first shows a modal (`showWithdrawSpecs`) displaying the calculated
+ *     base amount and interest upon premature withdrawal (fetched via GET `/employee/withdraw/:aid`).
+ *     Confirming in the modal then proceeds with the actual withdrawal.
+ *   - Actual withdrawal is performed by a POST request to `/employee/withdraw/:aid`.
+ * 
+ * @returns {JSX.Element} The account information page.
+ */
+const AccountInfo = () => {
+    const [accountData, setAccountData] = useState(null);
+    const [accountTransactions, setAccountTransactions] = useState(null);
+    const [sender, setSender] = useState(false);
+    const [showSure, setShowSure] = useState(false);
+    const [balance, setBalance] = useState('');
+    const [showWithdrawSpecs, setShowWithdrawSpecs] = useState(false);
+    const [loadWithdraw, setLoadWithdraw] = useState(false);
+    const [withdrawBase, setWithdrawBase] = useState('');
+    const [withdrawInterest, setWithdrawInterest] = useState('');
+
+    const { aid } = useParams();
+    const navigate = useNavigate();
+
+    /**
+     * Fetches account details and transaction history from the API.
+     * Updates `accountData` and `accountTransactions` state.
+     */
+    const getAccountData = async () => {
+        setSender(true);
+        
+        try {
+            const response = await getAPI(`/employee/account/${aid}`);
+            setAccountData(response.account);
+            setAccountTransactions(response.transactions);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Handles the account withdrawal process.
+     * - Shows a confirmation step (`showSure`) if not already shown (and not bypassing).
+     * - For RD/FD accounts, if `showWithdrawSpecs` is not true, sets it to true to show the withdrawal details modal.
+     * - If confirmed (or OD), calls the POST `/employee/withdraw/:aid` API to withdraw the account.
+     * - Refetches account data and balance on success.
+     * @param {boolean} [bypass=false] - If true, bypasses the initial `showSure` confirmation.
+     */
+    const withdrawAccount = async (bypass = false) => {
+        if (accountData?.status === "withdrawn") {
+            toast("Account is already withdrawn!", {
+                icon: "🚫",
+            });
+            return;
+        }
+
+        if (!bypass &amp;&amp; !showSure) {
+            setShowSure(true);
+            return;
+        }
+
+        if (accountData?.accountType === "rd" || accountData?.accountType === "fd") {
+            if (!showWithdrawSpecs) {
+                setShowWithdrawSpecs(true);
+                return;
+            } 
+        }
+        
+        if (sender) return;
+        else setSender(true);
+        
+        try {
+            const response = await postAPI(`/employee/withdraw/${aid}`);
+            toast.success(response.message);
+            setShowWithdrawSpecs(false);
+            await getAccountData();
+            await getBalance();
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    useEffect(() => {
+        if (showSure) {
+            const timer = setTimeout(() => {
+                setShowSure(false);
+            }, 10000)
+
+            return () => {
+                clearTimeout(timer);
+            }
+        }
+    }, [showSure])
+    
+    /**
+     * Fetches the current balance for the account from the API.
+     * Updates the `balance` state.
+     */
+    const getBalance = async () => {
+        setSender(true);
+
+        try {
+            const response = await getAPI(`/employee/get-balance/${aid}`);
+            setBalance(response.balance);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setSender(false);
+        }
+    }
+
+    /**
+     * Fetches the details for a premature withdrawal (base amount, interest amount).
+     * This is typically called when the `showWithdrawSpecs` modal is displayed for RD/FD accounts.
+     * Uses a GET request to `/employee/withdraw/:aid`.
+     * Updates `withdrawBase` and `withdrawInterest` state.
+     */
+    const getWithdrawDetails = async () => {
+        setLoadWithdraw(true);
+        
+        try {
+            const response = await getAPI(`/employee/withdraw/${aid}`);
+            setWithdrawBase(response.baseAmount);
+            setWithdrawInterest(response.interestAmount);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoadWithdraw(false);
+        }
+    }
+
+    useEffect(() => {
+        if (showWithdrawSpecs) {
+            setWithdrawBase('');
+            setWithdrawInterest('');
+            getWithdrawDetails();
+        }
+    }, [showWithdrawSpecs])
+
+    useEffect(() => {
+        getAccountData();
+        getBalance();
+    }, [])
+    
+    return (
+        &lt;>
+            {showWithdrawSpecs ?
+            &lt;>
+                &lt;div className="absolute top-0 left-0 w-screen h-screen overflow-hidden bg-black/50" />
+                &lt;div className="absolute top-0 left-0 w-screen h-screen overflow-hidden flex justify-center items-center">
+                    &lt;div className="relative z-30 bg-white border-[#F8F9FA] border-2 shadow-xl py-5 px-10 rounded-xl">
+                        &lt;p className="pb-2 border-b text-center font-semibold">After Withdrawing&lt;/p>
+                        {loadWithdraw ? &lt;Loader text={"Fetching..."} classes={"mt-5"} /> :
+                        &lt;>
+                            &lt;div className="w-[300px] flex justify-between mt-5">
+                                &lt;p>Maturity&lt;/p>
+                                &lt;p className={accountData?.status === "completed" ? "text-green-500" : "text-red-500"}>{accountData?.status === "completed" ? "Completed" : "Not Completed"}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="w-[300px] flex justify-between mt-5">
+                                &lt;p>Base Amt.&lt;/p>
+                                &lt;p>{withdrawBase}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="w-[300px] flex justify-between mt-5">
+                                &lt;p>Interest&lt;/p>
+                                &lt;p>{withdrawInterest}&lt;/p>
+                            &lt;/div>
+                            &lt;hr className="border-[#55595F] border-1 mt-5" />
+                            &lt;div className="w-[300px] flex justify-between mt-5">
+                                &lt;p>Total Amt.&lt;/p>
+                                &lt;p>{parseFloat(withdrawBase) + parseFloat(withdrawInterest)}&lt;/p>
+                            &lt;/div>
+                            &lt;div className="w-[300px] flex justify-between gap-x-5 mt-5">
+                                &lt;CustomButton sender={sender} classes={"mt-5 w-full"} danger={true} text={"Withdraw"} cb={() => withdrawAccount(true)} />
+                                &lt;CustomButton sender={sender} classes={"mt-5 w-full"} danger={false} text={"Close"} cb={() => setShowWithdrawSpecs(false)} />
+                            &lt;/div>
+                        &lt;/>}
+                    &lt;/div>
+                &lt;/div>
+            &lt;/> : null}
+            {&lt;div className="flex flex-col w-[70%] px-12 py-10">
+                &lt;p className="text-[24px] font-semibold flex justify-between">Account Info&lt;/p>
+                &lt;hr className="border-[#55595F] border-1 mt-5" />
+                &lt;div className="flex flex-col text-[#1E1F26]">
+                    {sender ? &lt;Loader classes={"mt-20"} text={"Fetching..."} /> :
+                    !accountData ? &lt;NotFound text={"No Account Info Found!"} classes={"mt-10"} /> : &lt;div className="flex flex-col border border-white shadow-md rounded-xl bg-[#F8F9FA] p-5 mt-5">
+                        &lt;div className="font-bold pb-2 border-b w-full text-xl flex justify-between">
+                            &lt;span>Acc. No. {accountData?.accountNumber}&lt;/span>
+                            &lt;span className="flex gap-x-2">
+                                &lt;span className="uppercase">{accountData?.accountType}&lt;/span> 
+                                &lt;span className="capitalize">
+                                    {
+                                        accountData?.accountType === "cd" ? "(Compulsory Deposit)" :
+                                        accountData?.accountType === "od" ? "(Optional Deposit)" :
+                                        accountData?.accountType === "rd" ? "(Recurrent Deposit)" :
+                                        accountData?.accountType === "fd" ? "(Fixed Deposit)" : ""
+                                    }
+                                &lt;/span>
+                            &lt;/span>
+                        &lt;/div>
+                        &lt;div className="bg-shape text-4xl mt-3 rounded-xl p-5 flex justify-between items-center text-white">
+                            &lt;span>{accountData.status === "withdrawn" ? "Closing Balance" : "Balance"}&lt;/span>
+                            &lt;span>{import.meta.env.VITE_CURRENCY_SYMBOL}{(accountData.status === "withdrawn" ? accountData.givenAmount : balance) || 0}&lt;/span>
+                        &lt;/div>
+                        &lt;div className="flex mt-5 flex-col">
+                            &lt;p className="ml-3 font-semibold">Customer Profile&lt;/p>
+                            &lt;div onClick={() => navigate(`/employee/member/${accountData?.user?.membershipNumber}`)} className="flex items-center mt-2 cursor-pointer gap-x-5 border border-white shadow-xl rounded-xl px-4 py-2">
+                                &lt;p className="w-[150px]">{accountData?.user?.membershipNumber}&lt;/p>
+                                &lt;p className="flex-1 truncate">{accountData?.user?.memberName}&lt;/p>
+                                &lt;p className="w-[150px]">{accountData?.user?.phoneNumber}&lt;/p>
+                                &lt;IoOpenOutline />
+                            &lt;/div>
+                        &lt;/div>
+                        &lt;div className="flex mt-5">
+                            &lt;div className="flex-1 border border-white shadow-xl rounded-xl flex px-5 py-4">
+                                &lt;div className="flex-1 flex-col border-r">
+                                    &lt;p className="text-sm">Start Date:&lt;/p>
+                                    &lt;p>{accountData?.startDate ? new Date(accountData?.startDate).toISOString().split("T")[0] : null}&lt;/p>
+                                    {accountData?.endDate ? 
+                                        &lt;>
+                                            &lt;p className="mt-2 text-sm">End Date:&lt;/p>
+                                            &lt;p>{new Date(accountData?.endDate).toISOString().split("T")[0]}&lt;/p>
+                                        &lt;/>
+                                    : null}
+                                    {accountData?.maturityDate ? 
+                                        &lt;>
+                                            &lt;p className="mt-2 text-sm">End Date:&lt;/p>
+                                            &lt;p>{new Date(accountData?.maturityDate).toISOString().split("T")[0]}&lt;/p>
+                                        &lt;/>
+                                    : null}
+                                &lt;/div>
+                                &lt;p className={`flex bg-white items-center justify-center capitalize text-xl font-semibold flex-col w-[150px] ml-5 rounded-xl shadow ${accountData?.status === "withdrawn" ? "text-red-500" : "text-green-500"}`}>
+                                    {accountData?.status}
+                                &lt;/p>
+                            &lt;/div>
+                            &lt;div className="flex-1 flex flex-col justify-center items-center">
+                                &lt;p className="text-center pb-2 w-2/3 border-b">Plan Details&lt;/p>
+                                &lt;div className="flex flex-col w-2/3 px-2">
+                                    {accountData?.plan?.roi ? &lt;p className="mt-2 flex justify-between">
+                                        &lt;span>ROI&lt;/span>
+                                        &lt;span>{accountData?.plan?.roi}&lt;/span>
+                                    &lt;/p> : null}
+                                    {accountData?.plan?.tenureInMonths ? &lt;p className="mt-2 flex justify-between">
+                                        &lt;span>Tenure&lt;/span>
+                                        &lt;span>{accountData?.plan?.tenureInMonths}&lt;/span>
+                                    &lt;/p> : null}
+                                    {accountData?.plan?.initialDeposit ? &lt;p className="mt-2 flex justify-between">
+                                        &lt;span>Deposit Amt.&lt;/span>
+                                        &lt;span>{accountData?.plan?.initialDeposit}&lt;/span>
+                                    &lt;/p> : null}
+                                &lt;/div>
+                            &lt;/div>
+                        &lt;/div>
+                        {(accountData.status !== "withdrawn") &amp;&amp; &lt;CustomButton sender={sender} classes={"mt-5"} danger={showSure ? true : false} text={showSure ? "Are you sure?" : "Withdraw Account"} cb={() => withdrawAccount()} />}
+                    &lt;/div>}
+                &lt;/div>
+                &lt;p className="text-[24px] font-semibold flex mt-10 justify-center">Transactions&lt;/p>
+                &lt;hr className="border-[#55595F] border-1 mt-5" />
+                &lt;div className="bg-white border-2 flex px-5 py-2 mt-4 border-black/30 shadow-md rounded-xl">
+                    &lt;p className="w-[250px]">Timestamp&lt;/p>
+                    &lt;p className="flex-1 text-center">Mode&lt;/p>
+                    &lt;p className="w-[300px] text-right truncate">Amount&lt;/p>
+                &lt;/div>
+                {sender ? &lt;Loader classes={"mt-20"} text={"Fetching..."} /> : 
+                    accountTransactions?.length ? accountTransactions.map((transaction, index) => (
+                    &lt;div key={"transaction-" + index} className="bg-[#F8F9FA] border flex px-5 py-2 mt-4 border-white rounded-xl shadow-md" >
+                        &lt;p className="w-[250px]">{new Date(transaction?.dateTime).toLocaleString()}&lt;/p>
+                        &lt;p className={`flex-1 capitalize text-center ${transaction?.mode === "debit" ? "text-red-500" : "text-green-500"}`}>{transaction?.mode}&lt;/p>
+                        &lt;p className={`w-[300px] text-right truncate ${transaction?.mode === "debit" ? "text-red-500" : "text-green-500"}`}>{transaction?.mode === "debit" ? "-" : "+"}{import.meta.env.VITE_CURRENCY_SYMBOL}{transaction?.amount}&lt;/p>
+                    &lt;/div>
+                )) : &lt;NotFound text={"No Transactions Found!"} classes={"mt-20"} /> }
+            &lt;/div>}
+        &lt;/>
+    )
+}
+
+export default AccountInfo;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

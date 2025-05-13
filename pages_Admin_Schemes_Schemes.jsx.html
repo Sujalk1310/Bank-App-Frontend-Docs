@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/Admin/Schemes/Schemes.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/Admin/Schemes/Schemes.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useRef } from "react";
+import { LuRepeat2 } from "react-icons/lu";
+import { TbPigMoney } from "react-icons/tb";
+import { BiMoneyWithdraw } from "react-icons/bi";
+import { HiBanknotes } from "react-icons/hi2";
+import TabButton from "../../../components/TabButton";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import RD from "./RD";
+import FD from "./FD";
+import CD from "./CD";
+import OD from "./OD";
+
+/**
+ * Schemes management page (Admin view).
+ * Provides a horizontally scrollable tabbed interface to manage different deposit schemes.
+ * Uses `TabButton` for scheme selection (CD, OD, RD, FD) and renders the corresponding
+ * scheme management component.
+ * Includes scroll buttons for navigating tabs if they overflow.
+ * 
+ * @returns {JSX.Element} The schemes management page.
+ */
+const Schemes = () => {
+    const [activeTab, setActiveTab] = useState('CD');
+
+    const scrollRef = useRef(null);
+
+    /**
+     * Scrolls the tab container horizontally.
+     * @param {"left"|"right"} direction - The direction to scroll.
+     */
+    const scroll = (direction) => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollBy({
+                left: direction === "left" ? -150 : 150,
+                behavior: "smooth",
+            });
+        }
+    };
+    
+    return (
+        &lt;div className="flex-1 overflow-y-auto">
+            &lt;div className="flex flex-col w-[70%] px-12 py-10">
+                &lt;p className="text-[24px] font-semibold">Schemes&lt;/p>
+                &lt;div className="relative mt-10">
+                    {/* Left Scroll Button */}
+                    &lt;button
+                        className="absolute top-0 -left-[35px] z-10 h-full px-1 bg-white shadow-md border rounded-xl"
+                        onClick={() => scroll("left")}
+                    >
+                        &lt;IoIosArrowBack className="text-xl" />
+                    &lt;/button>
+
+                    {/* Scrollable Tab List */}
+                    &lt;div
+                        ref={scrollRef}
+                        className="flex gap-x-2 flex-nowrap overflow-x-auto whitespace-nowrap no-scrollbar items-center"
+                    >
+                        &lt;TabButton icon={&lt;BiMoneyWithdraw />} text={"Compulsory Deposit (CD)"} cb={() => setActiveTab('CD')} activeTab={activeTab} tabName={"CD"} />
+                        &lt;TabButton icon={&lt;HiBanknotes />} text={"Optional Deposit (OD)"} cb={() => setActiveTab('OD')} activeTab={activeTab} tabName={"OD"} />
+                        &lt;TabButton icon={&lt;LuRepeat2 />} text={"Recurrent Deposit (RD)"} cb={() => setActiveTab('RD')} activeTab={activeTab} tabName={"RD"} />
+                        &lt;TabButton icon={&lt;TbPigMoney />} text={"Fixed Deposit (FD)"} cb={() => setActiveTab('FD')} activeTab={activeTab} tabName={"FD"} />
+                    &lt;/div>
+
+                    {/* Right Scroll Button */}
+                    &lt;button
+                         className="absolute -right-[35px] top-0 z-10 h-full px-1 bg-white shadow-md border rounded-xl"
+                        onClick={() => scroll("right")}
+                    >
+                        &lt;IoIosArrowForward className="text-xl" />
+                    &lt;/button>
+                &lt;/div>
+                &lt;hr className="border-[#55595F] border-1 mb-4" />
+                {activeTab === "CD" &amp;&amp; &lt;CD />}
+                {activeTab === "OD" &amp;&amp; &lt;OD />}
+                {activeTab === "RD" &amp;&amp; &lt;RD />}
+                {activeTab === "FD" &amp;&amp; &lt;FD />}
+            &lt;/div>
+        &lt;/div>
+    )
+}
+
+export default Schemes;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

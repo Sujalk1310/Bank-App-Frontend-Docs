@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/SearchableDropdown.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/SearchableDropdown.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useRef } from 'react';
+import AsyncSelect from 'react-select/async';
+import { getAPI } from '../caller/axiosUrls';
+
+/**
+ * An asynchronous, searchable dropdown component powered by react-select/async.
+ * Fetches options from a specified URL based on user input, with debouncing.
+ * 
+ * @param {object} props - The component props.
+ * @param {number} props.debounceTime - Time in milliseconds to wait after user stops typing before fetching options.
+ * @param {string} props.url - The base API endpoint URL to fetch options from. A `?search=` query parameter will be appended.
+ * @param {string} props.responseArrayName - The name of the array field in the API response containing the options.
+ * @param {string} props.placeholder - The placeholder text for the dropdown input.
+ * @param {string} props.idTag - The property name in each option object representing the ID (displayed in the label).
+ * @param {string} props.nameTag - The property name in each option object representing the name (displayed in the label).
+ * @param {string} props.phoneTag - The property name in each option object representing the phone number (displayed in the label).
+ * @param {function} props.onChange - Callback function executed when an option is selected. Passes the selected option object.
+ * @returns {JSX.Element} The AsyncSelect component configured for searchable dropdown functionality.
+ */
+const SearchableDropdown = ({ debounceTime, url, responseArrayName, placeholder, idTag, nameTag, phoneTag, onChange }) => {
+  const timeoutRef = useRef(null);
+
+  /**
+   * Loads options asynchronously based on the input value.
+   * Debounces the API call using the `debounceTime` prop.
+   * Maps the API response to the format required by react-select.
+   * 
+   * @param {string} inputValue - The current input value in the search box.
+   * @param {function} callback - The callback function provided by react-select to pass the loaded options.
+   */
+  const loadOptions = (inputValue, callback) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await getAPI(`${url}?search=${inputValue}`);
+        const options = res[responseArrayName].map(item => ({
+          label: (
+            &lt;div className="flex justify-between gap-2 px-10 w-full">
+              &lt;span className="w-[80px]">{item[idTag]}&lt;/span>
+              &lt;span className="grow truncate px-10 text-left">{item[nameTag]}&lt;/span>
+              &lt;span className="w-[120px]">{item[phoneTag]}&lt;/span>
+            &lt;/div>
+          ),
+          value: item
+        }));
+        callback(options);
+      } catch (error) {
+        console.error("Failed to fetch options:", error);
+        callback([]);
+      }
+    }, debounceTime);
+  };
+
+  return (
+    &lt;AsyncSelect
+      cacheOptions
+      loadOptions={loadOptions}
+      defaultOptions
+      placeholder={placeholder}
+      onChange={onChange}
+      isClearable
+      styles={{
+        control: (base) => ({
+            ...base,
+            border: "1px solid #cacaca",
+        }),
+        container: (base) => ({
+            ...base,
+            width: "100%", // Make sure select takes full width
+        }),
+        input: (input) => ({
+            ...input,
+            padding: "5px 10px",
+        }),
+        singleValue: (singleValue) => ({
+            ...singleValue,
+            padding: "5px 10px"
+        }),
+        placeholder: (placeholder) => ({
+            ...placeholder,
+            padding: "5px 10px"
+        })
+      }}
+    />
+  );
+};
+
+export default SearchableDropdown;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#AccountInfo">AccountInfo</a></li><li><a href="global.html#AccountsList">AccountsList</a></li><li><a href="global.html#AddUser">AddUser</a></li><li><a href="global.html#AdminContext">AdminContext</a></li><li><a href="global.html#AdminPanel">AdminPanel</a></li><li><a href="global.html#AdminProvider">AdminProvider</a></li><li><a href="global.html#AllUsers">AllUsers</a></li><li><a href="global.html#App">App</a></li><li><a href="global.html#CD">CD</a></li><li><a href="global.html#Create">Create</a></li><li><a href="global.html#CreateMembers">CreateMembers</a></li><li><a href="global.html#CustomButton">CustomButton</a></li><li><a href="global.html#Deposit">Deposit</a></li><li><a href="global.html#EmployeeContext">EmployeeContext</a></li><li><a href="global.html#EmployeePanel">EmployeePanel</a></li><li><a href="global.html#EmployeeProvider">EmployeeProvider</a></li><li><a href="global.html#FD">FD</a></li><li><a href="global.html#FormSkeleton">FormSkeleton</a></li><li><a href="global.html#FullPageLoader">FullPageLoader</a></li><li><a href="global.html#History">History</a></li><li><a href="global.html#Loader">Loader</a></li><li><a href="global.html#LoginAdmin">LoginAdmin</a></li><li><a href="global.html#LoginEmployee">LoginEmployee</a></li><li><a href="global.html#NotFound">NotFound</a></li><li><a href="global.html#OD">OD</a></li><li><a href="global.html#PasswordAndSecurity">PasswordAndSecurity</a></li><li><a href="global.html#PersonalInfo">PersonalInfo</a></li><li><a href="global.html#Profile">Profile</a></li><li><a href="global.html#RD">RD</a></li><li><a href="global.html#Schemes">Schemes</a></li><li><a href="global.html#SearchAccount">SearchAccount</a></li><li><a href="global.html#SearchMembers">SearchMembers</a></li><li><a href="global.html#SearchableDropdown">SearchableDropdown</a></li><li><a href="global.html#Settings">Settings</a></li><li><a href="global.html#Sidepanel">Sidepanel</a></li><li><a href="global.html#SidepanelButton">SidepanelButton</a></li><li><a href="global.html#TabButton">TabButton</a></li><li><a href="global.html#ToggleButton">ToggleButton</a></li><li><a href="global.html#UserDetails">UserDetails</a></li><li><a href="global.html#Withdraw">Withdraw</a></li><li><a href="global.html#isValidAadharNumber">isValidAadharNumber</a></li><li><a href="global.html#isValidEmail">isValidEmail</a></li><li><a href="global.html#isValidPanCard">isValidPanCard</a></li><li><a href="global.html#isValidPhoneNumber">isValidPhoneNumber</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue May 13 2025 11:00:03 GMT+0530 (India Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
